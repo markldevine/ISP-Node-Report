@@ -1,6 +1,7 @@
 #!/usr/bin/env raku
 
 use lib '/home/mdevine/github.com/ISP-dsmadmc/lib';
+use lib '/home/mdevine/github.com/raku-Our-Cache/lib';
 
 use ISP::dsmadmc;
 use Data::Dump::Tree;
@@ -43,7 +44,7 @@ sub MAIN (
     @sql = 'select', 'NODE_NAME', 'from', 'NODES';
     for $dsmadmc.execute(@sql) -> $record {
         my $node-name       = $record.values.tail;
-        %nodes{$node-name}  = {}                    if $node-name eq 'ISPLC02'; #%%%
+        %nodes{$node-name}  = {}                    if $node-name ~~ /^ISPLC02/; #%%%
     }
 
     for %nodes.keys -> $node-name {
@@ -64,22 +65,27 @@ put $node-name;
             %nodes{$node-name}<FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<NUMBER_OF_OBJECTS> = $record<NUMBER_OF_OBJECTS>;
         }
 
-#   start_time> '2012-09-01 00:00:00' AND start_time < '2012-09-02 00:00:00'
         my $today           = DateTime.new(now);
-        my $date-time       = DateTime.new(:year($today.year), :month($today.month), :day($today.day), :hour($window-hour), :0minute, :0second);
-die $date-time;
-        @sql =  'select', 'ENTITY,sum(BYTES)', 'as', 'BYTES',
-                'from', 'SUMMARY',
-                'where', "ENTITY='" ~ $node-name ~ "'",
-                'and', "ACTIVITY='BACKUP'",
-                'and', 'START_TIME>=current_timestamp-24', 'hours',
-                'group', 'by', 'ENTITY',
-                'order', 'by', '2', 'desc';
-        for $dsmadmc.execute(@sql, :purge-older-than(now - ($summary-retention * (24 * 60 * 60)))) -> $record {
+        my DateTime $start-date-time;
+        my DateTime $end-date-time = DateTime.new(:year($today.year), :month($today.month), :day($today.day), :hour($window-hour), :0minute, :0second);
+        loop (my $i = 0; $i < 3; $i++) {
+            $start-date-time = DateTime.new: $end-date-time - (24 * 60 * 60);
+            @sql =  'select', 'ENTITY,sum(BYTES)', 'as', 'BYTES',
+                    'from', 'SUMMARY',
+                    'where', "ENTITY='" ~ $node-name ~ "'",
+                    'and', "ACTIVITY='BACKUP'",
+                    'and', 'START_TIME>=' ~ "'" ~
+                    DateTime.new($start-date-time.Numeric, :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
+                    'and', 'START_TIME<=' ~ "'" ~
+                    DateTime.new($end-date-time.Numeric,   :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
+                    'group', 'by', 'ENTITY',
+                    'order', 'by', '2', 'desc';
+            for $dsmadmc.execute(@sql, :purge-older-than(now - ($summary-retention * (24 * 60 * 60)))) -> $record {
 ddt $record;
+            }
+            $end-date-time      = $start-date-time;
         }
-
     }
-ddt %nodes;
+#ddt %nodes;
 }
 =finish
