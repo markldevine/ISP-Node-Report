@@ -44,7 +44,7 @@ sub MAIN (
     @sql = 'select', 'NODE_NAME', 'from', 'NODES';
     for $dsmadmc.execute(@sql) -> $record {
         my $node-name       = $record.values.tail;
-        %nodes{$node-name}  = {}                    if $node-name ~~ /^ISPLC02/; #%%%
+        %nodes{$node-name}  = {};
     }
 
     for %nodes.keys -> $node-name {
@@ -68,7 +68,7 @@ put $node-name;
         my $today           = DateTime.new(now);
         my DateTime $start-date-time;
         my DateTime $end-date-time = DateTime.new(:year($today.year), :month($today.month), :day($today.day), :hour($window-hour), :0minute, :0second);
-        loop (my $i = 0; $i < 3; $i++) {
+        loop (my $i = 0; $i < $summary-retention; $i++) {
             $start-date-time = DateTime.new: $end-date-time - (24 * 60 * 60);
             @sql =  'select', 'ENTITY,sum(BYTES)', 'as', 'BYTES',
                     'from', 'SUMMARY',
@@ -80,7 +80,7 @@ put $node-name;
                     DateTime.new($end-date-time.Numeric,   :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
                     'group', 'by', 'ENTITY',
                     'order', 'by', '2', 'desc';
-            for $dsmadmc.execute(@sql, :purge-older-than(now - ($summary-retention * (24 * 60 * 60)))) -> $record {
+            for $dsmadmc.execute(@sql, :subdir($node-name), :purge-older-than(now - ($summary-retention * (24 * 60 * 60)))) -> $record {
 ddt $record;
             }
             $end-date-time      = $start-date-time;
