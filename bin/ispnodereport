@@ -1,0 +1,119 @@
+#!/usr/bin/env raku
+
+use lib '/home/mdevine/github.com/ISP-dsmadmc/lib';
+
+use ISP::dsmadmc;
+use Data::Dump::Tree;
+#use Grammar::Debugger;
+
+my %nodes;
+my %policy;
+my %clos;
+my @sql;
+
+sub MAIN (
+    Str:D   :$isp-node-name = 'AIXTEST',        #= ISP client name (SELECT NODE_NAME FROM NODES)
+    Str:D   :$isp-server    = 'ISPLC02',        #= ISP server name (SELECT SERVER_NAME FROM STATUS)
+    Str:D   :$isp-admin     = 'A028441',        #= ISP server Admin account
+    Bool    :$cache         = True,             #= Read from cache
+) {
+    my ISP::dsmadmc $dsmadmc   .= new(:$isp-server, :$isp-admin, :$cache);
+
+    @sql =
+        'select', 'DOMAIN_NAME,CLASS_NAME,DESTINATION,RETEXTRA,RETONLY',
+        'from', 'BU_COPYGROUPS',
+        'where', "SET_NAME='ACTIVE'",
+        'order', 'by', 'DOMAIN_NAME';
+
+    for $dsmadmc.execute(@sql) -> $record {
+        %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<DESTINATION>    = $record<DESTINATION>;
+        note $record<CLASS_NAME> unless $record<RETEXTRA> eq $record<RETONLY>;
+        %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<RETENTION>      = $record<RETEXTRA>;
+    }
+#ddt %policy;
+
+    @sql = 'select', 'NODE_NAME', 'from', 'NODES';
+    for $dsmadmc.execute(@sql) -> $record {
+        my $node-name       = $record.values.tail;
+        %nodes{$node-name}  = {};
+    }
+
+#   for %nodes.keys -> $node-name {
+#   for ('W-608863').list -> $node-name {
+    for ('SMB_GISPROD').list -> $node-name {
+#put $node-name;
+        @sql =  'select',
+                'B.NODE_NAME,',
+                'B.FILESPACE_NAME,',
+                'B.CLASS_NAME,',
+                'sum(BK.BFSIZE)', 'as', 'BYTES,',
+                'count(BK.BFSIZE)', 'as', 'NUMBER_OF_OBJECTS',
+                'from', 'BACKUPS B,', 'BACKUP_OBJECTS', 'BK',
+                'where', 'B.OBJECT_ID=BK.OBJID',
+                'and', "B.NODE_NAME='" ~ $node-name ~ "'",
+                'group', 'by', 'B.NODE_NAME,', 'B.FILESPACE_NAME,', 'B.CLASS_NAME';
+
+        for $dsmadmc.execute(@sql) -> $record {
+            next unless $record<FILESPACE_NAME>;
+            %nodes{$node-name}<FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<BYTES>             = $record<BYTES>;
+            %nodes{$node-name}<FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<NUMBER_OF_OBJECTS> = $record<NUMBER_OF_OBJECTS>;
+        }
+
+
+
+    }
+ddt %nodes<SMB_GISPROD>;
+}
+=finish
+
+#   select ENTITY,sum(BYTES) as BYTES from SUMMARY where ACTIVITY='BACKUP' and START_TIME>=current_timestamp - 24 hours group by ENTITY order by 2 desc
+
+    @sql =
+        'select', 'DOMAIN_NAME,CLASS_NAME,DESTINATION,RETEXTRA,RETONLY',
+        'from', 'BU_COPYGROUPS',
+        'where', "SET_NAME='ACTIVE'",
+        'order', 'by', 'DOMAIN_NAME';
+
+    for $dsmadmc.execute(@sql) -> $record {
+put $record;
+#       my $node-name           = $node-record<NODE_NAME>;
+#       my $option-set          = $node-record<OPTION_SET>;
+#       %nodes{$node-name}<DOMAIN_NAME> = $node-record<DOMAIN_NAME>;
+#       %nodes{$node-name}<OPTION_SET>  = $node-record<OPTION_SET>;
+    }
+#ddt %nodes;
+
+
+#   for $dsmadmc.execute(['SELECT', 'DOMAIN_NAME,SET_NAME,CLASS_NAME,COPYGROUP_NAME,RETEXTRA,RETONLY,DESTINATION', 'FROM', 'BU_COPYGROUPS']) -> $bucg-record {
+#       my $domain              = $bucg-record<DOMAIN_NAME>;
+#       my $set-name            = $bucg-record<SET_NAME>;
+#       my $class-name          = $bucg-record<CLASS_NAME>;
+#       my $copygroup-name      = $bucg-record<COPYGROUP_NAME>;
+#       %bucgs<DOMAIN_NAME>{$domain}<SET_NAME>{$set-name}<CLASS_NAME>{$class-name}<COPYGROUP_NAME>{$copygroup-name}<RETEXTRA>       = $bucg-record<RETEXTRA>;
+#       %bucgs<DOMAIN_NAME>{$domain}<SET_NAME>{$set-name}<CLASS_NAME>{$class-name}<COPYGROUP_NAME>{$copygroup-name}<RETONLY>        = $bucg-record<RETONLY>;
+#       %bucgs<DOMAIN_NAME>{$domain}<SET_NAME>{$set-name}<CLASS_NAME>{$class-name}<COPYGROUP_NAME>{$copygroup-name}<DESTINATION>    = $bucg-record<DESTINATION>;
+#   }
+#ddt %bucgs;
+
+#OPTIONSET_NAME: AIXTEST
+#   OPTION_NAME: INCLEXCL
+#     SEQNUMBER: 100
+#  OPTION_VALUE: INCLUDE '/u01/.../*'
+#         FORCE: NO
+#      OBSOLETE: NO
+# WHEN_OBSOLETE: 
+
+#   for $dsmadmc.execute(['SELECT', 'OPTIONSET_NAME,OPTION_NAME,OPTION_VALUE,SEQNUMBER', 'FROM', 'CLIENTOPTS']) -> $clo-record {
+#       my $option-set-name     = $clo-record<OPTIONSET_NAME>;
+#       my $option-name         = $clo-record<OPTION_NAME>;
+#       my $seqnumber           = $clo-record<SEQNUMBER>;
+#       %clos{$option-set-name}<OPTION_NAME>{$option-name}<SEQNUMBER>{$seqnumber}   = $clo-record<OPTION_VALUE>;
+#   }
+#dt %clos;
+}
+
+=finish
+
+select B.NODE_NAME,B.FILESPACE_NAME,B.CLASS_NAME,cast(float(sum(BK.BFSIZE))/1024/1024/1024 as dec(14,1)) as SIZE_GB,count(BK.BFSIZE) as NUMBER_OF_OBJECTS from BACKUPS B,BACKUP_OBJECTS BK where B.OBJECT_ID=BK.OBJID and B.TYPE<>'DIR' and B.NODE_NAME='AIXTEST' group by B.NODE_NAME,B.FILESPACE_NAME,B.CLASS_NAME
+
+
