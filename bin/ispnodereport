@@ -47,8 +47,25 @@ sub MAIN (
         %nodes{$node-name}  = {};
     }
 
-    for %nodes.keys -> $node-name {
-put $node-name;
+put 'Summary';
+    my $today           = DateTime.new(now);
+    my DateTime $start-date-time;
+    my DateTime $end-date-time = DateTime.new(:year($today.year), :month($today.month), :day($today.day), :hour($window-hour), :0minute, :0second);
+    $start-date-time = DateTime.new: $end-date-time - ($summary-retention * (24 * 60 * 60));
+    @sql =  'select', 'ENTITY,BYTES,START_TIME,END_TIME,EXAMINED,SCHEDULE_NAME,SUCCESSFUL',
+            'from', 'SUMMARY',
+            'where', "ACTIVITY='BACKUP'",
+            'and', 'START_TIME>=' ~ "'" ~
+            DateTime.new($start-date-time.Numeric, :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
+            'and', 'START_TIME<=' ~ "'" ~
+            DateTime.new($end-date-time.Numeric,   :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
+            'order', 'by', 'ENTITY';
+    for $dsmadmc.execute(@sql) -> $record {
+#ddt $record;
+    }
+
+#   for %nodes.keys.sort -> $node-name {
+put 'Node consumption...';
         @sql =  'select',
                 'B.NODE_NAME,',
                 'B.FILESPACE_NAME,',
@@ -57,35 +74,17 @@ put $node-name;
                 'count(BK.BFSIZE)', 'as', 'NUMBER_OF_OBJECTS',
                 'from', 'BACKUPS B,', 'BACKUP_OBJECTS', 'BK',
                 'where', 'B.OBJECT_ID=BK.OBJID',
-                'and', "B.NODE_NAME='" ~ $node-name ~ "'",
+#               'and', "B.NODE_NAME='" ~ $node-name ~ "'",
                 'group', 'by', 'B.NODE_NAME,', 'B.FILESPACE_NAME,', 'B.CLASS_NAME';
-        for $dsmadmc.execute(@sql) -> $record {
+#       for $dsmadmc.execute(@sql, :subdir($node-name), :purge-older-than(now - (24 * 60 * 60))) -> $record {
+        for $dsmadmc.execute(@sql, :purge-older-than(now - (24 * 60 * 60))) -> $record {
             next unless $record<FILESPACE_NAME>;
+            my $node-name = $record<NODE_NAME>;
             %nodes{$node-name}<FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<BYTES>             = $record<BYTES>;
             %nodes{$node-name}<FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<NUMBER_OF_OBJECTS> = $record<NUMBER_OF_OBJECTS>;
         }
-
-        my $today           = DateTime.new(now);
-        my DateTime $start-date-time;
-        my DateTime $end-date-time = DateTime.new(:year($today.year), :month($today.month), :day($today.day), :hour($window-hour), :0minute, :0second);
-        loop (my $i = 0; $i < $summary-retention; $i++) {
-            $start-date-time = DateTime.new: $end-date-time - (24 * 60 * 60);
-            @sql =  'select', 'ENTITY,sum(BYTES)', 'as', 'BYTES',
-                    'from', 'SUMMARY',
-                    'where', "ENTITY='" ~ $node-name ~ "'",
-                    'and', "ACTIVITY='BACKUP'",
-                    'and', 'START_TIME>=' ~ "'" ~
-                    DateTime.new($start-date-time.Numeric, :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
-                    'and', 'START_TIME<=' ~ "'" ~
-                    DateTime.new($end-date-time.Numeric,   :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
-                    'group', 'by', 'ENTITY',
-                    'order', 'by', '2', 'desc';
-            for $dsmadmc.execute(@sql, :subdir($node-name), :purge-older-than(now - ($summary-retention * (24 * 60 * 60)))) -> $record {
-ddt $record;
-            }
-            $end-date-time      = $start-date-time;
-        }
-    }
-#ddt %nodes;
+#   }
+put 'done';
+ddt %nodes;
 }
 =finish
