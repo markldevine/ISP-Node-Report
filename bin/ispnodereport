@@ -15,7 +15,7 @@ my $summary-retention;
 
 sub MAIN (
     Str:D   :$isp-node-name                     = 'AIXTEST',    #= ISP client name (SELECT NODE_NAME FROM NODES)
-    Str:D   :$isp-server                        = 'ISPLC02',    #= ISP server name (SELECT SERVER_NAME FROM STATUS)
+    Str:D   :$isp-server                        = 'ISPLC01',    #= ISP server name (SELECT SERVER_NAME FROM STATUS)
     Str:D   :$isp-admin                         = 'A028441',    #= ISP server Admin account
     Int:D   :$window-hour   where 0 <= * <= 24  = 15,           #= Daily backup window hour
     Bool    :$cache                             = True,         #= Read from cache
@@ -26,7 +26,6 @@ sub MAIN (
     for $dsmadmc.execute(@sql) -> $record {
         $summary-retention  = $record.values.tail;
     }
-#put 'purge-older-than: ' ~ DateTime.new(now - ($summary-retention * (24 * 60 * 60)));
 
     @sql =
         'select', 'DOMAIN_NAME,CLASS_NAME,DESTINATION,RETEXTRA,RETONLY',
@@ -39,7 +38,18 @@ sub MAIN (
         note $record<CLASS_NAME> unless $record<RETEXTRA> eq $record<RETONLY>;
         %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<RETENTION>      = $record<RETEXTRA>;
     }
-#ddt %policy;
+
+#   DFS => {1} @10
+#       CLASS_NAME => {3} @11
+#           DC => {2} @12
+#               DESTINATION => DFS_DC.Str
+#               RETENTION => 180   .Str
+#           STANDARD => {2} @13
+#               DESTINATION => DFS_DC.Str
+#               RETENTION => 731   .Str
+#           TGV => {2} @14
+#               DESTINATION => DFS_DC.Str
+#               RETENTION => 1830  .Str
 
     @sql = 'select', 'NODE_NAME', 'from', 'NODES';
     for $dsmadmc.execute(@sql) -> $record {
@@ -47,12 +57,31 @@ sub MAIN (
         %nodes{$node-name}  = {};
     }
 
-put 'Summary';
+put 'Node consumption...';
+    @sql =  'select',
+            'B.NODE_NAME,',
+            'B.FILESPACE_NAME,',
+            'B.CLASS_NAME,',
+            'sum(BK.BFSIZE)', 'as', 'BYTES,',
+            'count(BK.BFSIZE)', 'as', 'NUMBER_OF_OBJECTS',
+            'from', 'BACKUPS B,', 'BACKUP_OBJECTS', 'BK',
+            'where', 'B.OBJECT_ID=BK.OBJID',
+            'group', 'by', 'B.NODE_NAME,', 'B.FILESPACE_NAME,', 'B.CLASS_NAME';
+    for $dsmadmc.execute(@sql, :purge-older-than(now - (24 * 60 * 60))) -> $record {
+        next unless $record<FILESPACE_NAME>;
+        my $node-name = $record<NODE_NAME>;
+next unless $node-name eq 'AIXTEST';
+        die 'NODE_NAME <' ~ $node-name ~ '> encountered in BACKUPS but not in NODES' unless %nodes{$node-name}:exists;
+        %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<BYTES>             = $record<BYTES>;
+        %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<NUMBER_OF_OBJECTS> = $record<NUMBER_OF_OBJECTS>;
+    }
+
+put 'Summary...';
     my $today           = DateTime.new(now);
     my DateTime $start-date-time;
-    my DateTime $end-date-time = DateTime.new(:year($today.year), :month($today.month), :day($today.day), :hour($window-hour), :0minute, :0second);
+    my DateTime $end-date-time  = DateTime.new(:year($today.year), :month($today.month), :day($today.day), :hour($window-hour), :0minute, :0second);
     $start-date-time = DateTime.new: $end-date-time - ($summary-retention * (24 * 60 * 60));
-    @sql =  'select', 'ENTITY,BYTES,START_TIME,END_TIME,EXAMINED,SCHEDULE_NAME,SUCCESSFUL',
+    @sql =  'select', 'AFFECTED,BYTES,END_TIME,ENTITY,EXAMINED,SCHEDULE_NAME,START_TIME',
             'from', 'SUMMARY',
             'where', "ACTIVITY='BACKUP'",
             'and', 'START_TIME>=' ~ "'" ~
@@ -60,31 +89,53 @@ put 'Summary';
             'and', 'START_TIME<=' ~ "'" ~
             DateTime.new($end-date-time.Numeric,   :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
             'order', 'by', 'ENTITY';
+
+#   AFFECTED => 287
+#   BYTES => 19060591.Str
+#   END_TIME => .DateTime @1
+#       $.hour = 15   
+#       $.minute = 29   
+#       $.second = 47   
+#       $.timezone = -14400   
+#       $.year = 2023   
+#       $.month = 9   
+#       $.day = 14   
+#       $.daycount = 0   
+#       &.formatter = Nil
+#   ENTITY => AIXTEST.Str
+#   EXAMINED => 134046.Str
+#   START_TIME => .DateTime @2
+#       $.hour = 15   
+#       $.minute = 29   
+#       $.second = 23   
+#       $.timezone = -14400   
+#       $.year = 2023   
+#       $.month = 9   
+#       $.day = 14   
+#       $.daycount = 0   
+#       &.formatter = Nil
+
+#   my $anon-count              = 1;
     for $dsmadmc.execute(@sql) -> $record {
-#ddt $record;
+        my $node-name = $record<ENTITY>;
+next unless $node-name eq 'AIXTEST';
+        my $schedule-name       = $record<SCHEDULE_NAME>;
+        next                    unless $schedule-name;
+#       $schedule-name          = 'ANON' ~ $anon-count++ unless $schedule-name;
+        die 'ENTITY <' ~ $node-name ~ '> encountered in SUMMARY but not in NODES' unless %nodes{$node-name}:exists;
+        my $affected            = $record<AFFECTED>;
+        my $bytes               = $record<BYTES>;
+        my $end-time            = $record<END_TIME>;
+        my $examined            = $record<EXAMINED>;
+        my $start-time          = $record<START_TIME>;
+        my $elapsed-seconds     = $end-time.posix - $start-time.posix;
+        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<AFFECTED>.unshift($affected);
+        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<BYTES>.unshift($bytes);
+        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<EXAMINED>.unshift($examined);
+        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<ELAPSED>.unshift($elapsed-seconds);
     }
 
-#   for %nodes.keys.sort -> $node-name {
-put 'Node consumption...';
-        @sql =  'select',
-                'B.NODE_NAME,',
-                'B.FILESPACE_NAME,',
-                'B.CLASS_NAME,',
-                'sum(BK.BFSIZE)', 'as', 'BYTES,',
-                'count(BK.BFSIZE)', 'as', 'NUMBER_OF_OBJECTS',
-                'from', 'BACKUPS B,', 'BACKUP_OBJECTS', 'BK',
-                'where', 'B.OBJECT_ID=BK.OBJID',
-#               'and', "B.NODE_NAME='" ~ $node-name ~ "'",
-                'group', 'by', 'B.NODE_NAME,', 'B.FILESPACE_NAME,', 'B.CLASS_NAME';
-#       for $dsmadmc.execute(@sql, :subdir($node-name), :purge-older-than(now - (24 * 60 * 60))) -> $record {
-        for $dsmadmc.execute(@sql, :purge-older-than(now - (24 * 60 * 60))) -> $record {
-            next unless $record<FILESPACE_NAME>;
-            my $node-name = $record<NODE_NAME>;
-            %nodes{$node-name}<FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<BYTES>             = $record<BYTES>;
-            %nodes{$node-name}<FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<NUMBER_OF_OBJECTS> = $record<NUMBER_OF_OBJECTS>;
-        }
-#   }
 put 'done';
-ddt %nodes;
+ddt %nodes<AIXTEST>;
 }
 =finish
