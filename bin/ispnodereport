@@ -1,6 +1,7 @@
 #!/usr/bin/env raku
 
 #use lib '/home/mdevine/github.com/ISP-dsmadmc/lib';
+use lib '/home/mdevine/github.com/raku-Our-Grid/lib';
 #use lib '/home/mdevine/github.com/raku-Our-Cache/lib';
 
 use ISP::dsmadmc;
@@ -27,99 +28,87 @@ sub MAIN (
 
     $grid      .= new;
     $grid.title('ISP Node Summary');
+    $grid.add-heading: 'Node',                                                                              :bold,  :justification<left>;
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),   :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('1'),                               :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),    :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('1'),                               :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus), :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('1'),                               :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),   :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('7'),                               :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),    :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('7'),                               :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus), :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('7'),                               :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),   :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('30'),                              :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),    :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('30'),                              :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus), :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('30'),                              :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading: 'Change Rate'        ~ ouc-superscript-H,                                            :bold,  :justification<right>;
+    $grid.add-heading: 'Backup Size'        ~ ouc-superscript-H,                                            :bold,  :justification<right>;
+    $grid.add-heading: 'Backup Duration'    ~ ouc-superscript-H,                                            :bold,  :justification<right>;
 
-    $grid.add-heading: 'Node',                                                                  :bold,  :justification<left>;
-
-    my Our::Grid::Cell $cell;
-    my @fragments;
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),      :bold);
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('1'),                                  :bold, :superscript);
-    $cell      .= new(:@fragments,                                                              :justification<right>);
-    $grid.add-heading: :$cell;
-
-    @fragments  = ();
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),       :bold);
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('1'),                                  :bold, :superscript);
-    $cell      .= new(:@fragments,                                                              :justification<right>);
-    $grid.add-heading: :$cell;
-
-    @fragments  = ();
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus),    :bold);
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('1'),                                  :bold, :superscript);
-    $cell      .= new(:@fragments,                                                              :justification<right>);
-    $grid.add-heading: :$cell;
-
-    @fragments  = ();
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),      :bold);
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('7'),                                  :bold, :superscript);
-    $cell      .= new(:@fragments,                                                              :justification<right>);
-    $grid.add-heading: :$cell;
-
-    @fragments  = ();
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),       :bold);
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('7'),                                  :bold, :superscript);
-    $cell      .= new(:@fragments,                                                              :justification<right>);
-    $grid.add-heading: :$cell;
-
-    @fragments  = ();
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus),    :bold);
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('7'),                                  :bold, :superscript);
-    $cell      .= new(:@fragments,                                                              :justification<right>);
-    $grid.add-heading: :$cell;
-
-    @fragments  = ();
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),      :bold);
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('30'),                                 :bold, :superscript);
-    $cell      .= new(:@fragments,                                                              :justification<right>);
-    $grid.add-heading: :$cell;
-
-    @fragments  = ();
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),       :bold);
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('30'),                                 :bold, :superscript);
-    $cell      .= new(:@fragments,                                                              :justification<right>);
-    $grid.add-heading: :$cell;
-
-    @fragments  = ();
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus),    :bold);
-    @fragments.push: Our::Grid::Cell::Fragment.new(:text('30'),                                 :bold, :superscript);
-    $cell      .= new(:@fragments,                                                              :justification<right>);
-    $grid.add-heading: :$cell;
-
-    $grid.add-heading: 'Change Rate'        ~ ouc-superscript-H,                                :bold,  :justification<right>;
-    $grid.add-heading: 'Backup Size'        ~ ouc-superscript-H,                                :bold,  :justification<right>;
-    $grid.add-heading: 'Backup Duration'    ~ ouc-superscript-H,                                :bold,  :justification<right>;
-
-    $grid.add-heading: 'Storage Consumed',                                                      :bold,  :justification<right>;
-    $grid.add-heading: 'Number of Files',                                                       :bold,  :justification<right>;
-
-# -------------
-
-#   @fragments  = ();
-#   @fragments.push: Our::Grid::Cell::Fragment.new(:text('AIXTEST' ~ ouc-superscript-lparen),   :bold);
-#   @fragments.push: Our::Grid::Cell::Fragment.new(:text('90'),                                 :bold, :superscript);
-#   @fragments.push: Our::Grid::Cell::Fragment.new(:text(ouc-superscript-rparen),               :bold);
-#   $grid.add-cell: :cell(Our::Grid::Cell.new(:@fragments,                                      :justification<right>));
-
-$grid.add-cell: 'AIXTEST-90', :justification<right>;
-    $grid.add-cell: '40',                                                                       :justification<right>;
-    $grid.add-cell: '15',                                                                       :justification<right>;
-    $grid.add-cell: '00:01:15',                                                                 :justification<right>;
-    $grid.add-cell: '30',                                                                       :justification<right>;
-    $grid.add-cell: '14',                                                                       :justification<right>;
-    $grid.add-cell: '00:01:14',                                                                 :justification<right>;
-    $grid.add-cell: '20',                                                                       :justification<right>;
-    $grid.add-cell: '13',                                                                       :justification<right>;
-    $grid.add-cell: '00:01:13',                                                                 :justification<right>;
-    $grid.add-cell: '2%',                                                                       :justification<right>;
-    $grid.add-cell: '15',                                                                       :justification<right>;
-    $grid.add-cell: '00:01:14',                                                                 :justification<right>;
-    $grid.add-cell: '150',                                                                      :justification<right>;
-    $grid.add-cell: '15000',                                                                    :justification<right>;
-    $grid.current-row++;
-
-$grid.ANSI-print;
-}
-=finish
+    $grid.add-heading: 'File Space',                                                                        :bold,  :justification<right>;
+    $grid.add-heading: 'Retention',                                                                         :bold,  :justification<right>;
+    $grid.add-heading: 'Files Protected',                                                                   :bold,  :justification<right>;
+    $grid.add-heading: 'Back-End Storage',                                                                  :bold,  :justification<right>;
 
     my ISP::dsmadmc $dsmadmc   .= new(:$isp-server, :$isp-admin, :cache($data-cache));
 
@@ -239,8 +228,37 @@ put 'Summary...';
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<ELAPSED>.unshift($elapsed-seconds);
     }
 
-put 'done';
-#ddt %nodes<AIXTEST>;
-ddt %nodes;
+##  my @fragments  = ();
+##  @fragments.push: Our::Grid::Cell::Fragment.new(:text('AIXTEST' ~ ouc-superscript-lparen),   :bold);
+##  @fragments.push: Our::Grid::Cell::Fragment.new(:text('90'),                                 :bold, :superscript);
+##  @fragments.push: Our::Grid::Cell::Fragment.new(:text(ouc-superscript-rparen),               :bold);
+##  $grid.add-cell: :cell(Our::Grid::Cell.new(:@fragments,                                      :justification<left>));
+    $grid.add-cell: 'AIXTEST',                                                                  :justification<left>;
+    $grid.add-cell: '40',                                                                       :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52);
+    $grid.add-cell: '15',                                                                       :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52);
+    $grid.add-cell: '00:01:15',                                                                 :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52);
+    $grid.add-cell: '30',                                                                       :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4,102,69);
+    $grid.add-cell: '14',                                                                       :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4,102,69);
+    $grid.add-cell: '00:01:14',                                                                 :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4,102,69);
+    $grid.add-cell: '20',                                                                       :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82);
+    $grid.add-cell: '13',                                                                       :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82);
+    $grid.add-cell: '00:01:13',                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82);
+    $grid.add-cell: '2%',                                                                       :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100);
+    $grid.add-cell: '15',                                                                       :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100);
+    $grid.add-cell: '00:01:14',                                                                 :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100);
+    $grid.add-cell: '/opt',                                                                     :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
+    $grid.add-cell: '90',                                                                       :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
+    $grid.add-cell: '1500',                                                                     :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
+    $grid.add-cell: '25000',                                                                    :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
+
+#   for %nodes.keys -> $node-name {
+#       my $domain-name     = %nodes{$node-name}<DOMAIN_NAME>;
+#   %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<RETENTION>
+
+#       $grid.current-row++;
+#   }
+
+    $grid.ANSI-print;
 }
+
 =finish
