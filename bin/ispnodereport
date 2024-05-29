@@ -1,30 +1,100 @@
 #!/usr/bin/env raku
 
-use lib '/home/mdevine/github.com/ISP-dsmadmc/lib';
-use lib '/home/mdevine/github.com/raku-Our-Cache/lib';
+#use lib '/home/mdevine/github.com/ISP-dsmadmc/lib';
+#use lib '/home/mdevine/github.com/raku-Our-Cache/lib';
 
 use ISP::dsmadmc;
+use Our::Grid;
+use Our::Utilities;
 use Data::Dump::Tree;
 #use Grammar::Debugger;
 
-my %nodes;
-my %policy;
-my %clos;
-my @sql;
-my $summary-retention;
+my Our::Grid    $grid;
+my              %nodes;
+my              %policy;
+my              @sql;
+my Int          $summary-retention;
 
 sub MAIN (
     Str:D   :$isp-node-name                     = 'AIXTEST',    #= ISP client name (SELECT NODE_NAME FROM NODES)
     Str:D   :$isp-server                        = 'ISPLC01',    #= ISP server name (SELECT SERVER_NAME FROM STATUS)
     Str:D   :$isp-admin                         = 'A028441',    #= ISP server Admin account
     Int:D   :$window-hour   where 0 <= * <= 24  = 15,           #= Daily backup window hour
-    Bool    :$cache                             = True,         #= Read from cache
+    Bool    :$data-cache                        = True,         #= Read 'data' from cache
+    Bool    :$report-cache                      = False,        #= Read 'report' from cache
 ) {
-    my ISP::dsmadmc $dsmadmc   .= new(:$isp-server, :$isp-admin, :$cache);
+#   if $report-cache, just pull the last finalized report...
+
+    $grid      .= new;
+    $grid.title('ISP Node Summary');
+
+    $grid.add-heading: 'Node',                                                                  :bold,  :justification<left>;
+
+    my Our::Grid::Cell $cell;
+    my @fragments;
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),      :bold);
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('1'),                                  :bold, :superscript);
+    $cell      .= new(:@fragments,                                                              :justification<right>);
+    $grid.add-heading: :$cell;
+    @fragments  = ();
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),       :bold);
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('1'),                                  :bold, :superscript);
+    $cell      .= new(:@fragments,                                                              :justification<right>);
+    $grid.add-heading: :$cell;
+    @fragments  = ();
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus),    :bold);
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('1'),                                  :bold, :superscript);
+    $cell      .= new(:@fragments,                                                              :justification<right>);
+    $grid.add-heading: :$cell;
+
+    @fragments  = ();
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),      :bold);
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('7'),                                  :bold, :superscript);
+    $cell      .= new(:@fragments,                                                              :justification<right>);
+    $grid.add-heading: :$cell;
+    @fragments  = ();
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),       :bold);
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('7'),                                  :bold, :superscript);
+    $cell      .= new(:@fragments,                                                              :justification<right>);
+    $grid.add-heading: :$cell;
+    @fragments  = ();
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus),    :bold);
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('7'),                                  :bold, :superscript);
+    $cell      .= new(:@fragments,                                                              :justification<right>);
+    $grid.add-heading: :$cell;
+
+    @fragments  = ();
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),      :bold);
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('30'),                                 :bold, :superscript);
+    $cell      .= new(:@fragments,                                                              :justification<right>);
+    $grid.add-heading: :$cell;
+    @fragments  = ();
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),       :bold);
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('30'),                                 :bold, :superscript);
+    $cell      .= new(:@fragments,                                                              :justification<right>);
+    $grid.add-heading: :$cell;
+    @fragments  = ();
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus),    :bold);
+    @fragments.push: Our::Grid::Cell::Fragment.new(:text('30'),                                 :bold, :superscript);
+    $cell      .= new(:@fragments,                                                              :justification<right>);
+    $grid.add-heading: :$cell;
+
+    $grid.add-heading: 'Change Rate'        ~ ouc-superscript-H,                                :bold,  :justification<right>;
+    $grid.add-heading: 'Backup Size'        ~ ouc-superscript-H,                                :bold,  :justification<right>;
+    $grid.add-heading: 'Backup Duration'    ~ ouc-superscript-H,                                :bold,  :justification<right>;
+
+    $grid.add-heading: 'Storage Consumed',                                                      :bold,  :justification<right>;
+    $grid.add-heading: 'Number of Files',                                                       :bold,  :justification<right>;
+
+ddt $grid;
+}
+=finish
+
+    my ISP::dsmadmc $dsmadmc   .= new(:$isp-server, :$isp-admin, :cache($data-cache));
 
     @sql = 'select', 'SUMMARYRETENTION', 'from', 'STATUS';
     for $dsmadmc.execute(@sql) -> $record {
-        $summary-retention  = $record.values.tail;
+        $summary-retention  = $record.values.tail.Int;
     }
 
     @sql =
@@ -51,11 +121,13 @@ sub MAIN (
 #               DESTINATION => DFS_DC.Str
 #               RETENTION => 1830  .Str
 
-    @sql = 'select', 'NODE_NAME', 'from', 'NODES';
+    @sql = 'select', 'DOMAIN_NAME,NODE_NAME', 'from', 'NODES';
     for $dsmadmc.execute(@sql) -> $record {
-        my $node-name       = $record.values.tail;
-        %nodes{$node-name}  = {};
+        %nodes{$record<NODE_NAME>}<DOMAIN_NAME> = $record<DOMAIN_NAME>;
     }
+
+#   AIXTEST => {1} @1
+#       DOMAIN_NAME => BA.Str
 
 put 'Node consumption...';
     @sql =  'select',
@@ -66,11 +138,12 @@ put 'Node consumption...';
             'count(BK.BFSIZE)', 'as', 'NUMBER_OF_OBJECTS',
             'from', 'BACKUPS B,', 'BACKUP_OBJECTS', 'BK',
             'where', 'B.OBJECT_ID=BK.OBJID',
+            'and', "B.TYPE<>'DIR'",
             'group', 'by', 'B.NODE_NAME,', 'B.FILESPACE_NAME,', 'B.CLASS_NAME';
     for $dsmadmc.execute(@sql, :purge-older-than(now - (24 * 60 * 60))) -> $record {
         next unless $record<FILESPACE_NAME>;
         my $node-name = $record<NODE_NAME>;
-next unless $node-name eq 'AIXTEST';
+#next unless $node-name eq 'AIXTEST';
         die 'NODE_NAME <' ~ $node-name ~ '> encountered in BACKUPS but not in NODES' unless %nodes{$node-name}:exists;
         %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<BYTES>             = $record<BYTES>;
         %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<NUMBER_OF_OBJECTS> = $record<NUMBER_OF_OBJECTS>;
@@ -118,7 +191,7 @@ put 'Summary...';
 #   my $anon-count              = 1;
     for $dsmadmc.execute(@sql) -> $record {
         my $node-name = $record<ENTITY>;
-next unless $node-name eq 'AIXTEST';
+#next unless $node-name eq 'AIXTEST';
         my $schedule-name       = $record<SCHEDULE_NAME>;
         next                    unless $schedule-name;
 #       $schedule-name          = 'ANON' ~ $anon-count++ unless $schedule-name;
@@ -136,6 +209,7 @@ next unless $node-name eq 'AIXTEST';
     }
 
 put 'done';
-ddt %nodes<AIXTEST>;
+#ddt %nodes<AIXTEST>;
+ddt %nodes;
 }
 =finish
