@@ -36,11 +36,13 @@ sub MAIN (
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('1'),                                  :bold, :superscript);
     $cell      .= new(:@fragments,                                                              :justification<right>);
     $grid.add-heading: :$cell;
+
     @fragments  = ();
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),       :bold);
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('1'),                                  :bold, :superscript);
     $cell      .= new(:@fragments,                                                              :justification<right>);
     $grid.add-heading: :$cell;
+
     @fragments  = ();
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus),    :bold);
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('1'),                                  :bold, :superscript);
@@ -52,11 +54,13 @@ sub MAIN (
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('7'),                                  :bold, :superscript);
     $cell      .= new(:@fragments,                                                              :justification<right>);
     $grid.add-heading: :$cell;
+
     @fragments  = ();
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),       :bold);
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('7'),                                  :bold, :superscript);
     $cell      .= new(:@fragments,                                                              :justification<right>);
     $grid.add-heading: :$cell;
+
     @fragments  = ();
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus),    :bold);
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('7'),                                  :bold, :superscript);
@@ -68,11 +72,13 @@ sub MAIN (
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('30'),                                 :bold, :superscript);
     $cell      .= new(:@fragments,                                                              :justification<right>);
     $grid.add-heading: :$cell;
+
     @fragments  = ();
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),       :bold);
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('30'),                                 :bold, :superscript);
     $cell      .= new(:@fragments,                                                              :justification<right>);
     $grid.add-heading: :$cell;
+
     @fragments  = ();
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus),    :bold);
     @fragments.push: Our::Grid::Cell::Fragment.new(:text('30'),                                 :bold, :superscript);
@@ -86,7 +92,32 @@ sub MAIN (
     $grid.add-heading: 'Storage Consumed',                                                      :bold,  :justification<right>;
     $grid.add-heading: 'Number of Files',                                                       :bold,  :justification<right>;
 
-ddt $grid;
+# -------------
+
+#   @fragments  = ();
+#   @fragments.push: Our::Grid::Cell::Fragment.new(:text('AIXTEST' ~ ouc-superscript-lparen),   :bold);
+#   @fragments.push: Our::Grid::Cell::Fragment.new(:text('90'),                                 :bold, :superscript);
+#   @fragments.push: Our::Grid::Cell::Fragment.new(:text(ouc-superscript-rparen),               :bold);
+#   $grid.add-cell: :cell(Our::Grid::Cell.new(:@fragments,                                      :justification<right>));
+
+$grid.add-cell: 'AIXTEST-90', :justification<right>;
+    $grid.add-cell: '40',                                                                       :justification<right>;
+    $grid.add-cell: '15',                                                                       :justification<right>;
+    $grid.add-cell: '00:01:15',                                                                 :justification<right>;
+    $grid.add-cell: '30',                                                                       :justification<right>;
+    $grid.add-cell: '14',                                                                       :justification<right>;
+    $grid.add-cell: '00:01:14',                                                                 :justification<right>;
+    $grid.add-cell: '20',                                                                       :justification<right>;
+    $grid.add-cell: '13',                                                                       :justification<right>;
+    $grid.add-cell: '00:01:13',                                                                 :justification<right>;
+    $grid.add-cell: '2%',                                                                       :justification<right>;
+    $grid.add-cell: '15',                                                                       :justification<right>;
+    $grid.add-cell: '00:01:14',                                                                 :justification<right>;
+    $grid.add-cell: '150',                                                                      :justification<right>;
+    $grid.add-cell: '15000',                                                                    :justification<right>;
+    $grid.current-row++;
+
+$grid.ANSI-print;
 }
 =finish
 
