@@ -1,7 +1,7 @@
 #!/usr/bin/env raku
 
 #use lib '/home/mdevine/github.com/ISP-dsmadmc/lib';
-use lib '/home/mdevine/github.com/raku-Our-Grid/lib';
+#use lib '/home/mdevine/github.com/raku-Our-Grid/lib';
 #use lib '/home/mdevine/github.com/raku-Our-Cache/lib';
 
 use ISP::dsmadmc;
@@ -17,7 +17,7 @@ my              @sql;
 my Int          $summary-retention;
 
 sub MAIN (
-    Str:D   :$isp-node-name                     = 'AIXTEST',    #= ISP client name (SELECT NODE_NAME FROM NODES)
+#   Str:D   :$isp-node-name                     = 'AIXTEST',    #= ISP client name (SELECT NODE_NAME FROM NODES)
     Str:D   :$isp-server                        = 'ISPLC01',    #= ISP server name (SELECT SERVER_NAME FROM STATUS)
     Str:D   :$isp-admin                         = 'A028441',    #= ISP server Admin account
     Int:D   :$window-hour   where 0 <= * <= 24  = 15,           #= Daily backup window hour
@@ -113,7 +113,7 @@ sub MAIN (
     my ISP::dsmadmc $dsmadmc   .= new(:$isp-server, :$isp-admin, :cache($data-cache));
 
     @sql = 'select', 'SUMMARYRETENTION', 'from', 'STATUS';
-    for $dsmadmc.execute(@sql) -> $record {
+    for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         $summary-retention  = $record.values.tail.Int;
     }
 
@@ -123,7 +123,7 @@ sub MAIN (
         'where', "SET_NAME='ACTIVE'",
         'order', 'by', 'DOMAIN_NAME';
 
-    for $dsmadmc.execute(@sql) -> $record {
+    for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<DESTINATION>    = $record<DESTINATION>;
         note $record<CLASS_NAME> unless $record<RETEXTRA> eq $record<RETONLY>;
         %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<RETENTION>      = $record<RETEXTRA>;
@@ -142,7 +142,7 @@ sub MAIN (
 #               RETENTION => 1830  .Str
 
     @sql = 'select', 'DOMAIN_NAME,NODE_NAME', 'from', 'NODES';
-    for $dsmadmc.execute(@sql) -> $record {
+    for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         %nodes{$record<NODE_NAME>}<DOMAIN_NAME> = $record<DOMAIN_NAME>;
     }
 
@@ -160,14 +160,69 @@ put 'Node consumption...';
             'where', 'B.OBJECT_ID=BK.OBJID',
             'and', "B.TYPE<>'DIR'",
             'group', 'by', 'B.NODE_NAME,', 'B.FILESPACE_NAME,', 'B.CLASS_NAME';
-    for $dsmadmc.execute(@sql, :purge-older-than(now - (24 * 60 * 60))) -> $record {
+    for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         next unless $record<FILESPACE_NAME>;
         my $node-name = $record<NODE_NAME>;
+#%%%
 #next unless $node-name eq 'AIXTEST';
+#%%%
         die 'NODE_NAME <' ~ $node-name ~ '> encountered in BACKUPS but not in NODES' unless %nodes{$node-name}:exists;
         %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<BYTES>             = $record<BYTES>;
         %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<NUMBER_OF_OBJECTS> = $record<NUMBER_OF_OBJECTS>;
     }
+
+#   AIXTEST => {2} @1
+#       DOMAIN_NAME => BA.Str
+#       POLICY => {1} @2
+#           FILESPACE_NAME => {9} @3
+#               / => {1} @4
+#                   CLASS_NAME => {1} @5
+#                       DEFAULT => {2} @6
+#                       BYTES => 2190667164.Str
+#                       NUMBER_OF_OBJECTS => 20090.Str
+#               /admin => {1} @7
+#                   CLASS_NAME => {1} @8
+#                       DEFAULT => {2} @9
+#                       BYTES => 7582232576.Str
+#                       NUMBER_OF_OBJECTS => 390.Str
+#               /audit => {1} @10
+#                   CLASS_NAME => {1} @11
+#                       DEFAULT => {2} @12
+#                       BYTES => 21629952.Str
+#                       NUMBER_OF_OBJECTS => 4.Str
+#               /home => {1} @13
+#                   CLASS_NAME => {1} @14
+#                       DEFAULT => {2} @15
+#                       BYTES => 287307776.Str
+#                       NUMBER_OF_OBJECTS => 10314.Str
+#               /nmon => {1} @16
+#                   CLASS_NAME => {1} @17
+#                       DEFAULT => {2} @18
+#                       BYTES => 5401223168.Str
+#                       NUMBER_OF_OBJECTS => 603.Str
+#               /opt => {1} @19
+#                   CLASS_NAME => {1} @20
+#                       DEFAULT => {2} @21
+#                       BYTES => 24136881222.Str
+#                       NUMBER_OF_OBJECTS => 36224.Str
+#               /usr => {1} @22
+#                   CLASS_NAME => {1} @23
+#                       DEFAULT => {2} @24
+#                       BYTES => 8890792514.Str
+#                       NUMBER_OF_OBJECTS => 82325.Str
+#               /var => {1} @25
+#                   CLASS_NAME => {1} @26
+#                       DEFAULT => {2} @27
+#                       BYTES => 32309822100.Str
+#                       NUMBER_OF_OBJECTS => 23781.Str
+#               /wmata => {1} @28
+#                   CLASS_NAME => {1} @29
+#                       DEFAULT => {2} @30
+#                       BYTES => 4564601856.Str
+#                       NUMBER_OF_OBJECTS => 68.Str
+
+
+
 
 put 'Summary...';
     my $today           = DateTime.new(now);
@@ -181,6 +236,7 @@ put 'Summary...';
             DateTime.new($start-date-time.Numeric, :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
             'and', 'START_TIME<=' ~ "'" ~
             DateTime.new($end-date-time.Numeric,   :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
+#%%% 'and', 'ENTITY=' ~ "'AIXTEST'";
             'order', 'by', 'ENTITY';
 
 #   AFFECTED => 287
@@ -209,7 +265,7 @@ put 'Summary...';
 #       &.formatter = Nil
 
 #   my $anon-count              = 1;
-    for $dsmadmc.execute(@sql) -> $record {
+    for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         my $node-name = $record<ENTITY>;
 #next unless $node-name eq 'AIXTEST';
         my $schedule-name       = $record<SCHEDULE_NAME>;
@@ -258,7 +314,7 @@ put 'Summary...';
 #       $grid.current-row++;
 #   }
 
-    $grid.ANSI-print;
+    $grid.TEXT-print;
 }
 
 =finish
