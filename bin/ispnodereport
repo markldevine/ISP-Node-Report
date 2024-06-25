@@ -163,9 +163,6 @@ put 'Node consumption...';
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         next unless $record<FILESPACE_NAME>;
         my $node-name = $record<NODE_NAME>;
-#%%%
-#next unless $node-name eq 'AIXTEST';
-#%%%
         die 'NODE_NAME <' ~ $node-name ~ '> encountered in BACKUPS but not in NODES' unless %nodes{$node-name}:exists;
         %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<BYTES>             = $record<BYTES>;
         %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<NUMBER_OF_OBJECTS> = $record<NUMBER_OF_OBJECTS>;
@@ -178,48 +175,48 @@ put 'Node consumption...';
 #               / => {1} @4
 #                   CLASS_NAME => {1} @5
 #                       DEFAULT => {2} @6
-#                       BYTES => 2190667164.Str
-#                       NUMBER_OF_OBJECTS => 20090.Str
+#                           BYTES => 2190667164.Str
+#                           NUMBER_OF_OBJECTS => 20090.Str
 #               /admin => {1} @7
 #                   CLASS_NAME => {1} @8
 #                       DEFAULT => {2} @9
-#                       BYTES => 7582232576.Str
-#                       NUMBER_OF_OBJECTS => 390.Str
+#                           BYTES => 7582232576.Str
+#                           NUMBER_OF_OBJECTS => 390.Str
 #               /audit => {1} @10
 #                   CLASS_NAME => {1} @11
 #                       DEFAULT => {2} @12
-#                       BYTES => 21629952.Str
-#                       NUMBER_OF_OBJECTS => 4.Str
+#                           BYTES => 21629952.Str
+#                           NUMBER_OF_OBJECTS => 4.Str
 #               /home => {1} @13
 #                   CLASS_NAME => {1} @14
 #                       DEFAULT => {2} @15
-#                       BYTES => 287307776.Str
-#                       NUMBER_OF_OBJECTS => 10314.Str
+#                           BYTES => 287307776.Str
+#                           NUMBER_OF_OBJECTS => 10314.Str
 #               /nmon => {1} @16
 #                   CLASS_NAME => {1} @17
 #                       DEFAULT => {2} @18
-#                       BYTES => 5401223168.Str
-#                       NUMBER_OF_OBJECTS => 603.Str
+#                           BYTES => 5401223168.Str
+#                           NUMBER_OF_OBJECTS => 603.Str
 #               /opt => {1} @19
 #                   CLASS_NAME => {1} @20
 #                       DEFAULT => {2} @21
-#                       BYTES => 24136881222.Str
-#                       NUMBER_OF_OBJECTS => 36224.Str
+#                           BYTES => 24136881222.Str
+#                           NUMBER_OF_OBJECTS => 36224.Str
 #               /usr => {1} @22
 #                   CLASS_NAME => {1} @23
 #                       DEFAULT => {2} @24
-#                       BYTES => 8890792514.Str
-#                       NUMBER_OF_OBJECTS => 82325.Str
+#                           BYTES => 8890792514.Str
+#                           NUMBER_OF_OBJECTS => 82325.Str
 #               /var => {1} @25
 #                   CLASS_NAME => {1} @26
 #                       DEFAULT => {2} @27
-#                       BYTES => 32309822100.Str
-#                       NUMBER_OF_OBJECTS => 23781.Str
+#                           BYTES => 32309822100.Str
+#                           NUMBER_OF_OBJECTS => 23781.Str
 #               /wmata => {1} @28
 #                   CLASS_NAME => {1} @29
 #                       DEFAULT => {2} @30
-#                       BYTES => 4564601856.Str
-#                       NUMBER_OF_OBJECTS => 68.Str
+#                           BYTES => 4564601856.Str
+#                           NUMBER_OF_OBJECTS => 68.Str
 #       SUMMARY => {1} @30
 #           SCHEDULE => {1} @31
 #               SCH_1500 => {4} @32
@@ -340,28 +337,71 @@ die;
 ##  @fragments.push: Our::Grid::Cell::Fragment.new(:text('90'),                                 :bold, :superscript);
 ##  @fragments.push: Our::Grid::Cell::Fragment.new(:text(ouc-superscript-rparen),               :bold);
 ##  $grid.add-cell: :cell(Our::Grid::Cell.new(:@fragments,                                      :justification<left>));
-    $grid.add-cell: 'AIXTEST',                                                                  :justification<left>;
-    $grid.add-cell: '40',                                                                       :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52);
-    $grid.add-cell: '15',                                                                       :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52);
-    $grid.add-cell: '00:01:15',                                                                 :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52);
-    $grid.add-cell: '30',                                                                       :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4,102,69);
-    $grid.add-cell: '14',                                                                       :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4,102,69);
-    $grid.add-cell: '00:01:14',                                                                 :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4,102,69);
-    $grid.add-cell: '20',                                                                       :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82);
-    $grid.add-cell: '13',                                                                       :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82);
-    $grid.add-cell: '00:01:13',                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82);
-    $grid.add-cell: '2%',                                                                       :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100);
-    $grid.add-cell: '15',                                                                       :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100);
-    $grid.add-cell: '00:01:14',                                                                 :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100);
-    $grid.add-cell: '/opt',                                                                     :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
-    $grid.add-cell: '90',                                                                       :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
-    $grid.add-cell: '1500',                                                                     :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
-    $grid.add-cell: '25000',                                                                    :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
+
+#   AIXTEST => {2} @1
+#       DOMAIN_NAME => BA.Str
+#       POLICY => {1} @2
+#           FILESPACE_NAME => {9} @3
+#               / => {1} @4
+#                   CLASS_NAME => {1} @5
+#                       DEFAULT => {2} @6
+#                           BYTES => 2190667164.Str
+#                           NUMBER_OF_OBJECTS => 20090.Str
+#               /admin => {1} @7
+#                   CLASS_NAME => {1} @8
+#                       DEFAULT => {2} @9
+#                           BYTES => 7582232576.Str
+#                           NUMBER_OF_OBJECTS => 390.Str
+#       SUMMARY => {1} @30
+#           SCHEDULE => {1} @31
+#               SCH_1500 => {4} @32
+#                   AFFECTED => [307] @33
+#                       0 = 348.Str
 
     for %nodes.keys -> $node-name {
-        my $domain-name     = %nodes{$node-name}<DOMAIN_NAME>;
+$grid.add-cell: $node-name,                                                                  :justification<left>;
+        my $domain-name         = %nodes{$node-name}<DOMAIN_NAME>;
+        my $files-1;
+        my $size-1;
+        my $elapsed-1;
+        my $files-7;
+        my $size-7;
+        my $elapsed-7;
+        my $files-30;
+        my $size-30;
+        my $elapsed-30;
+        for %nodes{$node-name}<SUMMARY><SCHEDULE>.keys -> $schedule {
+            $files-1            = 0;
+            $size-1             = 0;
+            $elapsed-1          = 0;
+            $files-7            = 0;
+            $size-7             = 0;
+            $elapsed-7          = 0;
+            $files-30           = 0;
+            $size-30            = 0;
+            $elapsed-30         = 0;
+        }
+$grid.add-cell: $files-1,                                                                   :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52);
+$grid.add-cell: $size-1,                                                                    :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52);
+$grid.add-cell: $elapsed-1,                                                                 :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52);
+$grid.add-cell: $files-7,                                                                   :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4,102,69);
+$grid.add-cell: $size-7,                                                                    :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4,102,69);
+$grid.add-cell: $elapsed-7,                                                                 :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4,102,69);
+$grid.add-cell: $files-30,                                                                  :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82);
+$grid.add-cell: $size-30,                                                                   :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82);
+$grid.add-cell: $elapsed-30,                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82);
 
-#   %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<RETENTION>
+$grid.add-cell: '101%',                                                                       :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100);
+$grid.add-cell: '99XB',                                                                       :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100);
+$grid.add-cell: '23:59:59',                                                                 :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100);
+
+        for %nodes{$node-name}<POLICY><FILESPACE_NAME>.keys -> $filespace {
+$grid.add-cell: $filespace,                                                                 :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
+            my $retention       = %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{                   }<RETENTION>
+$grid.add-cell: '90',                                                                       :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
+$grid.add-cell: '1500',                                                                     :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
+$grid.add-cell: '25000',                                                                    :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
+
 
         $grid.current-row++;
     }
