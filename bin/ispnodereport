@@ -220,8 +220,57 @@ put 'Node consumption...';
 #                       DEFAULT => {2} @30
 #                       BYTES => 4564601856.Str
 #                       NUMBER_OF_OBJECTS => 68.Str
-
-
+#       SUMMARY => {1} @30
+#           SCHEDULE => {1} @31
+#               SCH_1500 => {4} @32
+#                   AFFECTED => [307] @33
+#                       0 = 348.Str
+#                       1 = 264.Str
+#                       2 = 292.Str
+#                       3 = 307.Str
+#                       4 = 1394.Str
+#                       5 = 274.Str
+#                       6 = 471.Str
+#                       7 = 337.Str
+#                       8 = 338.Str
+#                       9 = 377.Str
+#                       10 = 428.Str
+#                   BYTES => [307] @34
+#                       0 = 17869402.Str
+#                       1 = 15572575.Str
+#                       2 = 20260507.Str
+#                       3 = 15960831.Str
+#                       4 = 59618072.Str
+#                       5 = 16519598.Str
+#                       6 = 15943586.Str
+#                       7 = 16653235.Str
+#                       8 = 17058054.Str
+#                       9 = 18418275.Str
+#                       10 = 19958258.Str
+#                   ELAPSED => [307] @35
+#                       0 = 25   
+#                       1 = 22   
+#                       2 = 20   
+#                       3 = 22   
+#                       4 = 28   
+#                       5 = 19   
+#                       6 = 25   
+#                       7 = 21   
+#                       8 = 24   
+#                       9 = 27   
+#                       10 = 86   
+#                   EXAMINED => [307] @36
+#                       0 = 141293.Str
+#                       1 = 141286.Str
+#                       2 = 141283.Str
+#                       3 = 141317.Str
+#                       4 = 141339.Str
+#                       5 = 141312.Str
+#                       6 = 141302.Str
+#                       7 = 141294.Str
+#                       8 = 141289.Str
+#                       9 = 141289.Str
+#                       10 = 141287.Str
 
 
 put 'Summary...';
@@ -283,6 +332,8 @@ put 'Summary...';
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<EXAMINED>.unshift($examined);
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<ELAPSED>.unshift($elapsed-seconds);
     }
+ddt %nodes<AIXTEST>;
+die;
 
 ##  my @fragments  = ();
 ##  @fragments.push: Our::Grid::Cell::Fragment.new(:text('AIXTEST' ~ ouc-superscript-lparen),   :bold);
@@ -307,12 +358,13 @@ put 'Summary...';
     $grid.add-cell: '1500',                                                                     :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
     $grid.add-cell: '25000',                                                                    :justification<right>,  :foreground<black>, :highlight(135, 233, 169),  :background(135, 233, 169);
 
-#   for %nodes.keys -> $node-name {
-#       my $domain-name     = %nodes{$node-name}<DOMAIN_NAME>;
+    for %nodes.keys -> $node-name {
+        my $domain-name     = %nodes{$node-name}<DOMAIN_NAME>;
+
 #   %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<RETENTION>
 
-#       $grid.current-row++;
-#   }
+        $grid.current-row++;
+    }
 
     $grid.TEXT-print;
 }
