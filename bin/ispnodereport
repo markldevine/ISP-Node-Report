@@ -366,7 +366,7 @@ put 'Summary...';
 put 'Grid...';
 my $COUNT = 3;
     for %nodes.keys.sort -> $node-name {
-last unless $COUNT;
+#last unless $COUNT;
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<white>, :highlight(21, 41, 34),     :background(21, 41, 34))),                                  :0col);
         my $domain-name         = %nodes{$node-name}<DOMAIN_NAME>;
         my $files1              = 0;
@@ -441,7 +441,7 @@ last unless $COUNT;
         else {
             $grid.add-cell(:cell(Our::Grid::Cell.new(:text('*'),                                                                                                :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :14col);
         }
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-number-of-objects),                                                                               :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :15col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-number-of-objects),                                                                               :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :number-to-metric-unit)),     :15col);
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-number-of-bytes),                                                                                 :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :bytes-to-bytes-unit)),       :16col);
         $grid.current-row++;
 
