@@ -18,15 +18,15 @@ my              @sql;
 my Int          $summary-retention;
 
 sub MAIN (
-#   Str:D   :$isp-node-name                     = 'AIXTEST',    #= ISP client name (SELECT NODE_NAME FROM NODES)
-    Str:D   :$isp-server                        = 'ISPLC01',    #= ISP server name (SELECT SERVER_NAME FROM STATUS)
+#   Str:D   :@node,                                             #= ISP client name(s)
+    Str:D   :$isp-server                        = 'ISPLC01',    #= ISP server name
     Str:D   :$isp-admin                         = 'A028441',    #= ISP server Admin account
     Int:D   :$window-hour   where 0 <= * <= 24  = 15,           #= Daily backup window hour
     Str     :$domain,                                           #= Filter by DOMAIN
     Bool    :$detail,                                           #= Add filespace detail rows
     Bool    :$with-occupancy                    = False,        #= Filter reporting to only NODEs with storage occupancy
     Bool    :$data-cache                        = True,         #= Read 'data' from cache
-    Bool    :$report-cache                      = False,        #= Read 'report' from cache
+    Bool    :$report-cache                      = True,         #= Read 'report' from cache
 ) {
 #   if $report-cache, just pull the last finalized report...
 
