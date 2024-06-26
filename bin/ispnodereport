@@ -128,7 +128,7 @@ sub MAIN (
                         'where',
                         "SET_NAME='ACTIVE'";
     if $domain {
-        @sql.append:    'and,
+        @sql.append:    'and',
                         "DOMAIN_NAME='" ~ $domain.uc ~ "'";
     }
     @sql.append:        'order', 'by', 'DOMAIN_NAME';
@@ -138,7 +138,9 @@ sub MAIN (
         note $record<CLASS_NAME> unless $record<RETEXTRA> eq $record<RETONLY>;
         %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<RETENTION>      = $record<RETEXTRA>;
     }
-    die 'Unknown --domain=' ~ $domain if $domain && %policy<DOMAIN_NAME>{$domain.uc}:!exists;
+    if $domain {
+        die "Unknown --domain=$domain" unless %policy<DOMAIN_NAME>{$domain.uc}:exists;
+    }
 
 #   DFS => {1} @10
 #       CLASS_NAME => {3} @11
@@ -188,7 +190,7 @@ put 'Node consumption...';
                         'B.CLASS_NAME,',
                         'sum(BK.BFSIZE)', 'as', 'BYTES,',
                         'count(BK.BFSIZE)', 'as', 'NUMBER_OF_OBJECTS',
-                        'from', 'BACKUPS', 'B',', 'BACKUP_OBJECTS', 'BK',
+                        'from', 'BACKUPS', 'B,', 'BACKUP_OBJECTS', 'BK',
                         'where';
     if $domain {
         @sql.append:    'B.NODE_NAME',
@@ -207,9 +209,9 @@ put 'Node consumption...';
                         'group', 'by', 'B.NODE_NAME,', 'B.FILESPACE_NAME,', 'B.CLASS_NAME';
 
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
-        next unless $record<FILESPACE_NAME>;
-        my $node-name = $record<NODE_NAME>;
-        die 'NODE_NAME <' ~ $node-name ~ '> encountered in BACKUPS but not in NODES' unless %nodes{$node-name}:exists;
+        next            unless $record<FILESPACE_NAME>;
+        my $node-name   = $record<NODE_NAME>;
+        next            unless %nodes{$node-name}:exists;
         %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<BYTES>             = $record<BYTES>;
         %nodes{$node-name}<POLICY><FILESPACE_NAME>{$record<FILESPACE_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<NUMBER_OF_OBJECTS> = $record<NUMBER_OF_OBJECTS>;
     }
@@ -315,23 +317,34 @@ put 'Node consumption...';
 #                       9 = 141289.Str
 #                       10 = 141287.Str
 
-
 put 'Summary...';
     my $today           = DateTime.new(now);
     my DateTime $start-date-time;
     my DateTime $end-date-time  = DateTime.new(:year($today.year), :month($today.month), :day($today.day), :hour($window-hour), :0minute, :0second);
     $start-date-time = DateTime.new: $end-date-time - ($summary-retention * (24 * 60 * 60));
-    @sql =  'select', 'AFFECTED,BYTES,END_TIME,ENTITY,EXAMINED,SCHEDULE_NAME,START_TIME',
-            'from', 'SUMMARY',
-            'where', "ACTIVITY='BACKUP'",
-            'and', 'START_TIME>=' ~ "'" ~
-            DateTime.new($start-date-time.Numeric, :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
-            'and', 'START_TIME<=' ~ "'" ~
-            DateTime.new($end-date-time.Numeric,   :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
-
-#%%% 'and', 'ENTITY=' ~ "'AIXTEST'";
-
-            'order', 'by', 'ENTITY';
+    @sql            =   'select', 
+                        'AFFECTED,BYTES,END_TIME,ENTITY,EXAMINED,SCHEDULE_NAME,START_TIME',
+                        'from', 'SUMMARY',
+                        'where';
+    if $domain {
+        @sql.append:    'ENTITY',
+                        'in',
+                        '(select',
+                        'NODE_NAME',
+                        'from',
+                        'NODES',
+                        'where',
+                        "DOMAIN_NAME='" ~ $domain.uc ~ "')",
+                        'and';
+    }
+    @sql.append:        "ACTIVITY='BACKUP'",
+                        'and',
+                        'START_TIME>=' ~ "'" ~
+                        DateTime.new($start-date-time.Numeric, :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
+                        'and',
+                        'START_TIME<=' ~ "'" ~
+                        DateTime.new($end-date-time.Numeric,   :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
+                        'order', 'by', 'ENTITY';
 
 #   AFFECTED => 287
 #   BYTES => 19060591.Str
@@ -361,11 +374,10 @@ put 'Summary...';
 #   my $anon-count              = 1;
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         my $node-name = $record<ENTITY>;
-#next unless $node-name eq 'AIXTEST';
         my $schedule-name       = $record<SCHEDULE_NAME>;
         next                    unless $schedule-name;
 #       $schedule-name          = 'ANON' ~ $anon-count++ unless $schedule-name;
-        die 'ENTITY <' ~ $node-name ~ '> encountered in SUMMARY but not in NODES' unless %nodes{$node-name}:exists;
+                                                                                                                                    die 'ENTITY <' ~ $node-name ~ '> encountered in SUMMARY but not in NODES' unless %nodes{$node-name}:exists; #%%%%%%%%%%%%%%%%%%%%%%
         my $affected            = $record<AFFECTED>;
         my $bytes               = $record<BYTES>;
         my $end-time            = $record<END_TIME>;
@@ -408,7 +420,7 @@ put 'Grid...';
 my $COUNT = 10;
     for %nodes.keys.sort -> $node-name {
 #next unless $node-name eq 'W-608863';
-last unless $COUNT;
+#last unless $COUNT;
         my $domain-name         = %nodes{$node-name}<DOMAIN_NAME>;
         my $files1              = 0;
         my $size1               = 0;
