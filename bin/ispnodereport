@@ -439,10 +439,10 @@ last unless $COUNT;
             $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%retentions.keys.first),                                                                             :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :14col);
         }
         else {
-            $grid.add-cell(:cell(Our::Grid::Cell.new(:text('*'),                                                                                                :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :14col);
+            $grid.add-cell(:cell(Our::Grid::Cell.new(:text('*'),                                                                                                :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :14col);
         }
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-number-of-objects),                                                                               :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :15col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-number-of-bytes),                                                                                 :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :16col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-number-of-bytes),                                                                                 :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :bytes-to-bytes-unit)),       :16col);
         $grid.current-row++;
 
 
