@@ -106,7 +106,7 @@ sub MAIN (
     $grid.add-heading: 'Backup Size'        ~ ouc-superscript-H,                                            :bold,  :justification<right>;
     $grid.add-heading: 'Backup Duration'    ~ ouc-superscript-H,                                            :bold,  :justification<right>;
 
-    $grid.add-heading: 'File Space',                                                                        :bold,  :justification<right>;
+    $grid.add-heading: 'File Space',                                                                        :bold,  :justification<left>;
     $grid.add-heading: 'Retention',                                                                         :bold,  :justification<right>;
     $grid.add-heading: 'Files Protected',                                                                   :bold,  :justification<right>;
     $grid.add-heading: 'Back-End Storage',                                                                  :bold,  :justification<right>;
@@ -430,10 +430,10 @@ last unless $COUNT;
             }
         }
         if %filespaces.elems == 1 {
-            $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%filespaces.keys.first),                                                                             :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
+            $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%filespaces.keys.first),                                                                             :justification<left>,   :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
         }
         else {
-            $grid.add-cell(:cell(Our::Grid::Cell.new(:text('*'),                                                                                                :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
+            $grid.add-cell(:cell(Our::Grid::Cell.new(:text('*'),                                                                                                :justification<left>,   :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
         }
         if %retentions.elems == 1 {
             $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%retentions.keys.first),                                                                             :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :14col);
@@ -447,7 +447,7 @@ last unless $COUNT;
 
 
 #       for %nodes{$node-name}<POLICY><FILESPACE_NAME>.keys.sort -> $filespace {
-#           $grid.add-cell(:cell(Our::Grid::Cell.new(:text($filespace),                                                                                         :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))), :13col);
+#           $grid.add-cell(:cell(Our::Grid::Cell.new(:text($filespace),                                                                                         :justification<left>,   :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
 #           my $class-name      = %nodes{$node-name}<POLICY><FILESPACE_NAME>{$filespace}<CLASS_NAME>.keys.first;
 #           my $active-class-name   = $class-name;
 #           $active-class-name      = %defaultmc{$domain-name} if $class-name eq 'DEFAULT';
