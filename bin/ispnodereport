@@ -23,7 +23,7 @@ sub MAIN (
     Str:D   :$isp-admin                         = 'A028441',    #= ISP server Admin account
     Int:D   :$window-hour   where 0 <= * <= 24  = 15,           #= Daily backup window hour
     Bool    :$detail,                                           #= Add filespace detail rows
-    Bool    :$with-occupancy                    = False         #= Filter reporting to only NODEs with storage occupancy
+    Bool    :$with-occupancy                    = False,        #= Filter reporting to only NODEs with storage occupancy
     Bool    :$data-cache                        = True,         #= Read 'data' from cache
     Bool    :$report-cache                      = False,        #= Read 'report' from cache
 ) {
@@ -368,14 +368,8 @@ put 'Summary...';
 put 'Grid...';
 my $COUNT = 10;
     for %nodes.keys.sort -> $node-name {
-        if $with-occupancy {
-            next unless %nodes{$node-name}<POLICY><FILESPACE_NAME>.elems
-        }
-next unless $node-name eq 'W-608863';
+#next unless $node-name eq 'W-608863';
 last unless $COUNT;
-$COUNT--;
-#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<white>, :highlight(21, 41, 34),     :background(21, 41, 34))),                                  :0col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :0col);
         my $domain-name         = %nodes{$node-name}<DOMAIN_NAME>;
         my $files1              = 0;
         my $size1               = 0;
@@ -397,34 +391,6 @@ $COUNT--;
             $size30             = 1;
             $elapsed30          = 1;
         }
-#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :1col);
-#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :2col);
-#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :3col);
-
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :1col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :2col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files30),                                                                                               :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :3col);
-
-#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<white>, :highlight(4, 102, 69),     :background(4, 102, 69))),                                  :4col);
-#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<white>, :highlight(4, 102, 69),     :background(4, 102, 69))),                                  :5col);
-#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(4, 102, 69),     :background(4, 102, 69))),                                  :6col);
-
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :4col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :5col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size30),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :6col);
-
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :7col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :8col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed30),                                                                                             :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :9col);
-
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('101%'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :10col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('99XB'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :11col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('23:59:59'),                                                                                             :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :12col);
-
-        unless %nodes{$node-name}<POLICY><FILESPACE_NAME>.elems {
-            $grid.current-row++;
-            next;
-        }
 
         my %retentions;
         my %filespaces;
@@ -441,6 +407,39 @@ $COUNT--;
                 $total-number-of-bytes     += %nodes{$node-name}<POLICY><FILESPACE_NAME>{$filespace}<CLASS_NAME>{$class-name}<BYTES>;
             }
         }
+
+        if $with-occupancy {
+            next                            unless %filespaces.elems;
+        }
+
+$COUNT--;
+
+#       :highlight(21, 41, 34),     :background(21, 41, 34) # almost black-green
+#       :highlight(4, 102, 69),     :background(4, 102, 69) # medium green
+
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :0col);
+
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :1col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :2col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files30),                                                                                               :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :3col);
+
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :4col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :5col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size30),                                                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :6col);
+
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :7col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :8col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed30),                                                                                             :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :9col);
+
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('101%'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :10col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('99XB'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :11col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('23:59:59'),                                                                                             :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :12col);
+
+        unless %nodes{$node-name}<POLICY><FILESPACE_NAME>.elems {
+            $grid.current-row++;
+            next;
+        }
+
         if %filespaces.elems == 1 {
             $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%filespaces.keys.first),                                                                             :justification<left>,   :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
         }
