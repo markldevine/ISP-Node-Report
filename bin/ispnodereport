@@ -22,6 +22,8 @@ sub MAIN (
     Str:D   :$isp-server                        = 'ISPLC01',    #= ISP server name (SELECT SERVER_NAME FROM STATUS)
     Str:D   :$isp-admin                         = 'A028441',    #= ISP server Admin account
     Int:D   :$window-hour   where 0 <= * <= 24  = 15,           #= Daily backup window hour
+    Bool    :$detail,                                           #= Add filespace detail rows
+    Bool    :$with-occupancy                    = False         #= Filter reporting to only NODEs with storage occupancy
     Bool    :$data-cache                        = True,         #= Read 'data' from cache
     Bool    :$report-cache                      = False,        #= Read 'report' from cache
 ) {
@@ -41,39 +43,7 @@ sub MAIN (
     $grid.add-heading:  :cell(
                             Our::Grid::Cell.new(
                                 :fragments(
-                                    Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),    :bold),
-                                    Our::Grid::Cell::Fragment.new(:text('1'),                               :bold,  :superscript),
-                                ),                                                                          :justification<right>,
-                            )
-                        );
-    $grid.add-heading:  :cell(
-                            Our::Grid::Cell.new(
-                                :fragments(
-                                    Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus), :bold),
-                                    Our::Grid::Cell::Fragment.new(:text('1'),                               :bold,  :superscript),
-                                ),                                                                          :justification<right>,
-                            )
-                        );
-    $grid.add-heading:  :cell(
-                            Our::Grid::Cell.new(
-                                :fragments(
                                     Our::Grid::Cell::Fragment.new(:text('Files' ~ ouc-superscript-minus),   :bold),
-                                    Our::Grid::Cell::Fragment.new(:text('7'),                               :bold,  :superscript),
-                                ),                                                                          :justification<right>,
-                            )
-                        );
-    $grid.add-heading:  :cell(
-                            Our::Grid::Cell.new(
-                                :fragments(
-                                    Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),    :bold),
-                                    Our::Grid::Cell::Fragment.new(:text('7'),                               :bold,  :superscript),
-                                ),                                                                          :justification<right>,
-                            )
-                        );
-    $grid.add-heading:  :cell(
-                            Our::Grid::Cell.new(
-                                :fragments(
-                                    Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus), :bold),
                                     Our::Grid::Cell::Fragment.new(:text('7'),                               :bold,  :superscript),
                                 ),                                                                          :justification<right>,
                             )
@@ -90,7 +60,39 @@ sub MAIN (
                             Our::Grid::Cell.new(
                                 :fragments(
                                     Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),    :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('1'),                               :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),    :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('7'),                               :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Size' ~ ouc-superscript-minus),    :bold),
                                     Our::Grid::Cell::Fragment.new(:text('30'),                              :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus), :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('1'),                               :bold,  :superscript),
+                                ),                                                                          :justification<right>,
+                            )
+                        );
+    $grid.add-heading:  :cell(
+                            Our::Grid::Cell.new(
+                                :fragments(
+                                    Our::Grid::Cell::Fragment.new(:text('Elapsed' ~ ouc-superscript-minus), :bold),
+                                    Our::Grid::Cell::Fragment.new(:text('7'),                               :bold,  :superscript),
                                 ),                                                                          :justification<right>,
                             )
                         );
@@ -364,10 +366,16 @@ put 'Summary...';
 #                       0 = 348.Str
 
 put 'Grid...';
-my $COUNT = 3;
+my $COUNT = 10;
     for %nodes.keys.sort -> $node-name {
-#last unless $COUNT;
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<white>, :highlight(21, 41, 34),     :background(21, 41, 34))),                                  :0col);
+        if $with-occupancy {
+            next unless %nodes{$node-name}<POLICY><FILESPACE_NAME>.elems
+        }
+next unless $node-name eq 'W-608863';
+last unless $COUNT;
+$COUNT--;
+#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<white>, :highlight(21, 41, 34),     :background(21, 41, 34))),                                  :0col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :0col);
         my $domain-name         = %nodes{$node-name}<DOMAIN_NAME>;
         my $files1              = 0;
         my $size1               = 0;
@@ -389,16 +397,24 @@ my $COUNT = 3;
             $size30             = 1;
             $elapsed30          = 1;
         }
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :1col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :2col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :3col);
+#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :1col);
+#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :2col);
+#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :3col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4, 102, 69))),                                  :4col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4, 102, 69))),                                  :5col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(4,102,69),       :background(4, 102, 69))),                                  :6col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :1col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :2col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files30),                                                                                               :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :3col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files30),                                                                                               :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :7col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size30),                                                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :8col);
+#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<white>, :highlight(4, 102, 69),     :background(4, 102, 69))),                                  :4col);
+#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<white>, :highlight(4, 102, 69),     :background(4, 102, 69))),                                  :5col);
+#       $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(4, 102, 69),     :background(4, 102, 69))),                                  :6col);
+
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :4col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :5col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size30),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :6col);
+
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :7col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :8col);
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed30),                                                                                             :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :9col);
 
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text('101%'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :10col);
@@ -410,10 +426,6 @@ my $COUNT = 3;
             next;
         }
 
-#%%%    analyze all filespaces & retentions, total up things,
-#%%%        - use '90' when only '90', use '*' when multiple
-#%%%        - iterate over classes and represent all FS<>CLASS values
-#%%%        - implement a '--detail' switch to include all FS<>CLASS records, otherwise omit them
         my %retentions;
         my %filespaces;
         my $total-number-of-objects;
@@ -432,11 +444,17 @@ my $COUNT = 3;
         if %filespaces.elems == 1 {
             $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%filespaces.keys.first),                                                                             :justification<left>,   :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
         }
+        elsif %filespaces.elems == 0 {
+            $grid.add-cell(:cell(Our::Grid::Cell.new(:text('-'),                                                                                                :justification<left>,   :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
+        }
         else {
             $grid.add-cell(:cell(Our::Grid::Cell.new(:text('*'),                                                                                                :justification<left>,   :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
         }
         if %retentions.elems == 1 {
             $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%retentions.keys.first),                                                                             :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :14col);
+        }
+        elsif %retentions == 0 {
+            $grid.add-cell(:cell(Our::Grid::Cell.new(:text('-'),                                                                                                :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :14col);
         }
         else {
             $grid.add-cell(:cell(Our::Grid::Cell.new(:text('*'),                                                                                                :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :14col);
@@ -445,22 +463,24 @@ my $COUNT = 3;
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-number-of-bytes),                                                                                 :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :bytes-to-bytes-unit)),       :16col);
         $grid.current-row++;
 
+        next unless $detail && %filespaces.elems > 1;
 
-#       for %nodes{$node-name}<POLICY><FILESPACE_NAME>.keys.sort -> $filespace {
-#           $grid.add-cell(:cell(Our::Grid::Cell.new(:text($filespace),                                                                                         :justification<left>,   :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
-#           my $class-name      = %nodes{$node-name}<POLICY><FILESPACE_NAME>{$filespace}<CLASS_NAME>.keys.first;
-#           my $active-class-name   = $class-name;
-#           $active-class-name      = %defaultmc{$domain-name} if $class-name eq 'DEFAULT';
-#           my $retention           = %policy<DOMAIN_NAME>{$domain-name}<CLASS_NAME>{$active-class-name}<RETENTION>;
-#           $grid.add-cell(:cell(Our::Grid::Cell.new(:text($retention),                                                                                         :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :14col);
-#           $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%nodes{$node-name}<POLICY><FILESPACE_NAME>{$filespace}<CLASS_NAME>{$class-name}<NUMBER_OF_OBJECTS>), :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :15col);
-#           $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%nodes{$node-name}<POLICY><FILESPACE_NAME>{$filespace}<CLASS_NAME>{$class-name}<BYTES>),             :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :bytes-to-bytes-unit)),       :16col);
-#           $grid.current-row++;
-#       }
-$COUNT--;
+        for %nodes{$node-name}<POLICY><FILESPACE_NAME>.keys.sort -> $filespace {
+            $grid.add-cell(:cell(Our::Grid::Cell.new(:text($filespace),                                                                                         :justification<left>,   :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :13col);
+            my $class-name      = %nodes{$node-name}<POLICY><FILESPACE_NAME>{$filespace}<CLASS_NAME>.keys.first;
+            my $active-class-name   = $class-name;
+            $active-class-name      = %defaultmc{$domain-name} if $class-name eq 'DEFAULT';
+            my $retention           = %policy<DOMAIN_NAME>{$domain-name}<CLASS_NAME>{$active-class-name}<RETENTION>;
+            $grid.add-cell(:cell(Our::Grid::Cell.new(:text($retention),                                                                                         :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :14col);
+            $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%nodes{$node-name}<POLICY><FILESPACE_NAME>{$filespace}<CLASS_NAME>{$class-name}<NUMBER_OF_OBJECTS>), :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :add-commas-to-digits)),      :15col);
+            $grid.add-cell(:cell(Our::Grid::Cell.new(:text(%nodes{$node-name}<POLICY><FILESPACE_NAME>{$filespace}<CLASS_NAME>{$class-name}<BYTES>),             :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :bytes-to-bytes-unit)),       :16col);
+            $grid.current-row++;
+        }
     }
-#   $grid.TEXT-print;
     $grid.ANSI-print;
+#   $grid.TEXT-print;
+#   $grid.TUI;
+#   $grid.CSV-print;
 }
 
 =finish
