@@ -22,6 +22,7 @@ sub MAIN (
     Str:D   :$isp-server                        = 'ISPLC01',    #= ISP server name (SELECT SERVER_NAME FROM STATUS)
     Str:D   :$isp-admin                         = 'A028441',    #= ISP server Admin account
     Int:D   :$window-hour   where 0 <= * <= 24  = 15,           #= Daily backup window hour
+    Str     :$domain,                                           #= Filter by DOMAIN
     Bool    :$detail,                                           #= Add filespace detail rows
     Bool    :$with-occupancy                    = False,        #= Filter reporting to only NODEs with storage occupancy
     Bool    :$data-cache                        = True,         #= Read 'data' from cache
@@ -120,17 +121,24 @@ sub MAIN (
         $summary-retention  = $record.values.tail.Int;
     }
 
-    @sql =
-        'select', 'DOMAIN_NAME,CLASS_NAME,DESTINATION,RETEXTRA,RETONLY',
-        'from', 'BU_COPYGROUPS',
-        'where', "SET_NAME='ACTIVE'",
-        'order', 'by', 'DOMAIN_NAME';
+    @sql            =   'select',
+                        'DOMAIN_NAME,CLASS_NAME,DESTINATION,RETEXTRA,RETONLY',
+                        'from',
+                        'BU_COPYGROUPS',
+                        'where',
+                        "SET_NAME='ACTIVE'";
+    if $domain {
+        @sql.append:    'and,
+                        "DOMAIN_NAME='" ~ $domain.uc ~ "'";
+    }
+    @sql.append:        'order', 'by', 'DOMAIN_NAME';
 
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<DESTINATION>    = $record<DESTINATION>;
         note $record<CLASS_NAME> unless $record<RETEXTRA> eq $record<RETONLY>;
         %policy<DOMAIN_NAME>{$record<DOMAIN_NAME>}<CLASS_NAME>{$record<CLASS_NAME>}<RETENTION>      = $record<RETEXTRA>;
     }
+    die 'Unknown --domain=' ~ $domain if $domain && %policy<DOMAIN_NAME>{$domain.uc}:!exists;
 
 #   DFS => {1} @10
 #       CLASS_NAME => {3} @11
@@ -144,13 +152,28 @@ sub MAIN (
 #               DESTINATION => DFS_DC.Str
 #               RETENTION => 1830  .Str
 
-#   select DOMAIN_NAME,CLASS_NAME from MGMTCLASSES where SET_NAME='ACTIVE' and DEFAULTMC='Yes'
-    @sql = 'select', 'DOMAIN_NAME,CLASS_NAME', 'from', 'MGMTCLASSES', 'where', "SET_NAME='ACTIVE'", 'and', "DEFAULTMC='Yes'";
+    @sql            =   'select',
+                        'DOMAIN_NAME,CLASS_NAME',
+                        'from', 'MGMTCLASSES',
+                        'where';
+    if $domain {
+        @sql.append:    "DOMAIN_NAME='" ~ $domain.uc ~ "'",
+                        'and';
+    }
+    @sql.append:        "SET_NAME='ACTIVE'",
+                        'and',
+                        "DEFAULTMC='Yes'";
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         %defaultmc{$record<DOMAIN_NAME>}    = $record<CLASS_NAME>;
     }
 
-    @sql = 'select', 'DOMAIN_NAME,NODE_NAME', 'from', 'NODES';
+    @sql            =   'select',
+                        'DOMAIN_NAME,NODE_NAME',
+                        'from', 'NODES';
+    if $domain {
+        @sql.append:    'where',
+                        "DOMAIN_NAME='" ~ $domain.uc ~ "'";
+    }
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         %nodes{$record<NODE_NAME>}<DOMAIN_NAME> = $record<DOMAIN_NAME>;
     }
@@ -159,16 +182,30 @@ sub MAIN (
 #       DOMAIN_NAME => BA.Str
 
 put 'Node consumption...';
-    @sql =  'select',
-            'B.NODE_NAME,',
-            'B.FILESPACE_NAME,',
-            'B.CLASS_NAME,',
-            'sum(BK.BFSIZE)', 'as', 'BYTES,',
-            'count(BK.BFSIZE)', 'as', 'NUMBER_OF_OBJECTS',
-            'from', 'BACKUPS B,', 'BACKUP_OBJECTS', 'BK',
-            'where', 'B.OBJECT_ID=BK.OBJID',
-            'and', "B.TYPE<>'DIR'",
-            'group', 'by', 'B.NODE_NAME,', 'B.FILESPACE_NAME,', 'B.CLASS_NAME';
+    @sql            =   'select',
+                        'B.NODE_NAME,',
+                        'B.FILESPACE_NAME,',
+                        'B.CLASS_NAME,',
+                        'sum(BK.BFSIZE)', 'as', 'BYTES,',
+                        'count(BK.BFSIZE)', 'as', 'NUMBER_OF_OBJECTS',
+                        'from', 'BACKUPS', 'B',', 'BACKUP_OBJECTS', 'BK',
+                        'where';
+    if $domain {
+        @sql.append:    'B.NODE_NAME',
+                        'in',
+                        '(select',
+                        'NODE_NAME',
+                        'from',
+                        'NODES',
+                        'where',
+                        "DOMAIN_NAME='" ~ $domain.uc ~ "')",
+                        'and';
+    }
+    @sql.append:        'B.OBJECT_ID=BK.OBJID',
+                        'and',
+                        "B.TYPE<>'DIR'",
+                        'group', 'by', 'B.NODE_NAME,', 'B.FILESPACE_NAME,', 'B.CLASS_NAME';
+
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         next unless $record<FILESPACE_NAME>;
         my $node-name = $record<NODE_NAME>;
@@ -291,7 +328,9 @@ put 'Summary...';
             DateTime.new($start-date-time.Numeric, :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
             'and', 'START_TIME<=' ~ "'" ~
             DateTime.new($end-date-time.Numeric,   :formatter({sprintf "%04d-%02d-%02d %02d:%02d:%02d", .year, .month, .day, .hour, .minute, .second})).Str ~ "'",
+
 #%%% 'and', 'ENTITY=' ~ "'AIXTEST'";
+
             'order', 'by', 'ENTITY';
 
 #   AFFECTED => 287
@@ -419,21 +458,21 @@ $COUNT--;
 
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :0col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :1col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :2col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files30),                                                                                               :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :3col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :1col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :2col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files30),                                                                                               :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :3col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :4col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :5col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size30),                                                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :6col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :4col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :5col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size30),                                                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :6col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :7col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :8col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed30),                                                                                             :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                :9col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :7col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :8col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed30),                                                                                             :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100))),                                 :9col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('101%'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :10col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('99XB'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :11col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('23:59:59'),                                                                                             :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                 :12col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('101%'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :10col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('99XB'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :11col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('23:59:59'),                                                                                             :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :12col);
 
         unless %nodes{$node-name}<POLICY><FILESPACE_NAME>.elems {
             $grid.current-row++;
