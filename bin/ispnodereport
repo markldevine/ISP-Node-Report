@@ -4,13 +4,16 @@
 #use lib '/home/mdevine/github.com/raku-Our-Grid/lib';
 #use lib '/home/mdevine/github.com/raku-Our-Cache/lib';
 
+use Getopt::Long;
 use ISP::dsmadmc;
 use Our::Grid;
 use Our::Utilities;
+
 use Data::Dump::Tree;
 #use Grammar::Debugger;
 
 my Our::Grid    $grid;
+my              @nodes;
 my              %nodes;
 my              %policy;
 my              %defaultmc;
@@ -18,7 +21,7 @@ my              @sql;
 my Int          $summary-retention;
 
 sub MAIN (
-#   Str:D   :@node,                                             #= ISP client name(s)
+    Str:D   :@node,                                             #= ISP client name(s)
     Str:D   :$isp-server                        = 'ISPLC01',    #= ISP server name
     Str:D   :$isp-admin                         = 'A028441',    #= ISP server Admin account
     Int:D   :$window-hour   where 0 <= * <= 24  = 15,           #= Daily backup window hour
@@ -29,6 +32,8 @@ sub MAIN (
     Bool    :$report-cache                      = True,         #= Read 'report' from cache
 ) {
 #   if $report-cache, just pull the last finalized report...
+
+    @nodes = @node.map({ .uc }).sort if @node.elems;
 
     $grid      .= new;
     $grid.title('ISP Node Summary');
@@ -172,7 +177,19 @@ sub MAIN (
     @sql            =   'select',
                         'DOMAIN_NAME,NODE_NAME',
                         'from', 'NODES';
-    if $domain {
+    if @nodes.elems {
+        @sql.append:    'where',
+                        'NODE_NAME',
+                        'in',
+                        '(';
+        my @n;
+        for @nodes -> $n {
+            @n.append:  "'" ~ $n ~ "'",
+        }
+        @sql.append:    @n.join(',');
+        @sql.append:    ')';
+    }
+    elsif $domain {
         @sql.append:    'where',
                         "DOMAIN_NAME='" ~ $domain.uc ~ "'";
     }
@@ -192,7 +209,19 @@ put 'Node consumption...';
                         'count(BK.BFSIZE)', 'as', 'NUMBER_OF_OBJECTS',
                         'from', 'BACKUPS', 'B,', 'BACKUP_OBJECTS', 'BK',
                         'where';
-    if $domain {
+    if @nodes.elems {
+        @sql.append:    'B.NODE_NAME',
+                        'in',
+                        '(';
+        my @n;
+        for @nodes -> $n {
+            @n.append:  "'" ~ $n ~ "'",
+        }
+        @sql.append:    @n.join(',');
+        @sql.append:    ')',
+                        'and';
+    }
+    elsif $domain {
         @sql.append:    'B.NODE_NAME',
                         'in',
                         '(select',
@@ -326,7 +355,19 @@ put 'Summary...';
                         'AFFECTED,BYTES,END_TIME,ENTITY,EXAMINED,SCHEDULE_NAME,START_TIME',
                         'from', 'SUMMARY',
                         'where';
-    if $domain {
+    if @nodes.elems {
+        @sql.append:    'ENTITY',
+                        'in',
+                        '(';
+        my @n;
+        for @nodes -> $n {
+            @n.append:  "'" ~ $n ~ "'",
+        }
+        @sql.append:    @n.join(',');
+        @sql.append:    ')',
+                        'and';
+    }
+    elsif $domain {
         @sql.append:    'ENTITY',
                         'in',
                         '(select',
@@ -422,26 +463,62 @@ my $COUNT = 10;
 #next unless $node-name eq 'W-608863';
 #last unless $COUNT;
         my $domain-name         = %nodes{$node-name}<DOMAIN_NAME>;
-        my $files1              = 0;
-        my $size1               = 0;
-        my $elapsed1            = 0;
-        my $files7              = 0;
-        my $size7               = 0;
-        my $elapsed7            = 0;
-        my $files30             = 0;
-        my $size30              = 0;
-        my $elapsed30           = 0;
+        my $files1;
+        my $files7;
+        my $files7-count;
+        my $files30;
+        my $files30-count;
+        my $size1;
+        my $size7;
+        my $size7-count;
+        my $size30;
+        my $size30-count;
+        my $elapsed1;
+        my $elapsed7;
+        my $elapsed7-count;
+        my $elapsed30;
+        my $elapsed30-count;
+        $files1                 = 0;
+        $files7                 = 0;
+        $files7-count           = 0;
+        $files30                = 0;
+        $files30-count          = 0;
+        $size1                  = 0;
+        $size7                  = 0;
+        $size7-count            = 0;
+        $size30                 = 0;
+        $size30-count           = 0;
+        $elapsed1               = 0;
+        $elapsed7               = 0;
+        $elapsed7-count         = 0;
+        $elapsed30              = 0;
+        $elapsed30-count        = 0;
         for %nodes{$node-name}<SUMMARY><SCHEDULE>.keys -> $schedule {
-            $files1             = 1;
-            $size1              = 1;
-            $elapsed1           = 1;
-            $files7             = 1;
-            $size7              = 1;
-            $elapsed7           = 1;
-            $files30            = 1;
-            $size30             = 1;
-            $elapsed30          = 1;
+            $files1            += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0];
+            $files7            += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0..6]      if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[6]:exists;
+            $files7-count      += 7;
+            $files30           += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0..29]     if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[29]:exists;
+            $files30-count     += 30;
+            $size1             += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[0];
+            $size7             += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[0..6]         if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[6]:exists;
+            $size7-count       += 7;
+            $size30            += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[0..29]        if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[29]:exists;
+            $size30-count      += 30;
+            $elapsed1          += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[0];
+            $elapsed7          += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[0..6]       if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[6]:exists;
+            $elapsed7-count    += 7;
+            $elapsed30         += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[0..29]      if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[29]:exists;
+            $elapsed30-count   += 30;
         }
+        $files1                 = add-commas-to-digits($files1);
+        $files7                 = add-commas-to-digits(($files7 / $files7-count).round)                     if $files7;
+        $files30                = add-commas-to-digits(($files30 / $files30-count).round)                   if $files30;
+        $size1                  = bytes-to-bytes-unit($size1);
+        $size7                  = bytes-to-bytes-unit(($size7 / $size7-count).round)                        if $size7;
+        $size30                 = bytes-to-bytes-unit(($size30 / $size30-count).round)                      if $size30;
+        $elapsed1               = seconds-to-y-d-hh-mm-ss($elapsed1);
+        $elapsed7               = seconds-to-y-d-hh-mm-ss(($elapsed7 / $elapsed7-count).round)              if $elapsed7;
+        $elapsed30              = seconds-to-y-d-hh-mm-ss(($elapsed30 / $elapsed30-count).round)            if $elapsed30;
 
         my %retentions;
         my %filespaces;
