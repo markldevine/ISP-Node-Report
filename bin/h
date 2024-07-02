@@ -1,8 +1,5 @@
 #!/usr/bin/env raku
 
-#       2024-06-30 15:00:00.000000 >= $start-time < 2024-07-01 15:00:00.000000          [0]
-#       2024-06-29 15:00:00.000000 >= $start-time < 2024-06-30 15:00:00.000000          [1]
-
 my $tz-off      = now.DateTime.local.timezone;
 
 my $window-hour = 15;
@@ -46,9 +43,12 @@ loop (my $i = 0; $i < 24; $i++) {
                         :00minute,
                         :00second,
                         :timezone($tz-off),
-                    ) - (1 * (24 * 60 * 60));
+                    ) - (2 * (24 * 60 * 60));
     my $result  = (($first - $data) / (24 * 60 * 60));
-    die 'Data DT is relatively in the future!' if $result <= 0;
+    if $result <= 0 {
+        note 'Data DT ' ~ $data.DateTime.local ~ " is in the backup window's future!";
+        next;
+    }
     my $index   = $result.floor;
     $index++    if $index < $result;
     put "[$index]\t" ~ $data.DateTime.local ~ "\t\t" ~ $result;
