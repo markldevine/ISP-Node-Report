@@ -15,7 +15,7 @@ my $year        = $target.local.year;
 my $month       = $target.local.month;
 my $day         = $target.local.day;
 
-my $first-e     =   DateTime.new(
+my $first-e     =   (DateTime.new(
                         :$year,
                         :$month,
                         :$day,
@@ -23,37 +23,30 @@ my $first-e     =   DateTime.new(
                         :0minute,
                         :0second,
                         :timezone($tz-off),
-                    );
+                    ) - .000001).DateTime;
 
-my $first-s     =   ($first-e - (24 * 60 * 60)).DateTime;
+my $first-s     =   ($first-e - ((24 * 60 * 60) - .000001)).DateTime;
 
 my $data-w      =   DateTime.new(
                         :$year,
                         :$month,
                         :$day,
 
-                        :15hour,
+                        :14hour,
                         :00minute,
                         :00second,
 
                         :timezone($tz-off),
-                    ) - (2 * (24 * 60 * 60));
+                    ) - (3 * (24 * 60 * 60));
 
 put 'Current date/time: ' ~ $now.local;
 put '       1st Window: ' ~ $first-s.DateTime.local ~ ' ... ' ~ $first-e.DateTime.local;
 put '   Data date/time: ' ~ $data-w.DateTime.local;
 
 my $result      = (($first-s - $data-w) / (24 * 60 * 60));
-put 'result = ' ~ $result;
-
-if $result <= 0 {
-    die 'Data DT is relatively in the future!';
-}
+put ' result = ' ~ $result;
 
 my $index       = $result.floor;
-$index++        if $index < $result;
-
-
 put 'index = ' ~ $index;
 
 
