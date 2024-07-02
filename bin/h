@@ -46,9 +46,7 @@ put '   Data date/time: ' ~ $data-w.DateTime.local;
 my $result      = (($first-s - $data-w) / (24 * 60 * 60));
 put 'result = ' ~ $result;
 
-if $result <= 0 {
-    die 'Data DT is relatively in the future!';
-}
+die 'Data DT is relatively in the future!' if $result <= 0;
 
 my $index       = $result.floor;
 $index++        if $index < $result;
