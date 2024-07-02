@@ -15,55 +15,43 @@ my $year        = $target.local.year;
 my $month       = $target.local.month;
 my $day         = $target.local.day;
 
-my $first-e     =   DateTime.new(
+put 'Current date/time: ' ~ $now.local;
+
+my $begin;
+my $first;
+loop (my $i = 0; $i < 10; $i++) {
+    my $end     =   (DateTime.new(
                         :$year,
                         :$month,
                         :$day,
                         :hour($window-hour),
-                        :0minute,
-                        :0second,
+                        :00minute,
+                        :00second,
                         :timezone($tz-off),
+                     ) - ($i * (24 * 60 * 60))
                     );
+    $begin      =   $end - (24 * 60 * 60);
+    $first      = $begin if $i == 0;
+    put "[$i]\t" ~ $begin.DateTime.local ~ ' ... ' ~ $end.DateTime.local;
+}
 
-my $first-s     =   ($first-e - (24 * 60 * 60)).DateTime;
+put "\t" ~ $first.DateTime.local;
 
-my $data-w      =   DateTime.new(
+loop (my $i = 0; $i < 24; $i++) {
+    my $data    =   DateTime.new(
                         :$year,
                         :$month,
                         :$day,
-
-                        :15hour,
+                        :hour($i),
                         :00minute,
                         :00second,
-
                         :timezone($tz-off),
-                    ) - (2 * (24 * 60 * 60));
-
-put 'Current date/time: ' ~ $now.local;
-put '       1st Window: ' ~ $first-s.DateTime.local ~ ' ... ' ~ $first-e.DateTime.local;
-put '   Data date/time: ' ~ $data-w.DateTime.local;
-
-my $result      = (($first-s - $data-w) / (24 * 60 * 60));
-put 'result = ' ~ $result;
-
-die 'Data DT is relatively in the future!' if $result <= 0;
-
-my $index       = $result.floor;
-$index++        if $index < $result;
-
-
-put 'index = ' ~ $index;
-
-
-
-=finish
-
-my $index       = $factors - 1;
-if $result > $factors {
-# it has a decimal part
-    put 'remainder = ' ~ ($result - $factors);
-    $index++;
+                    ) - (7 * (24 * 60 * 60));
+    my $result  = (($first - $data) / (24 * 60 * 60));
+    die 'Data DT is relatively in the future!' if $result <= 0;
+    my $index   = $result.floor;
+    $index++    if $index < $result;
+    put "[$index]\t" ~ $data.DateTime.local ~ "\t\t" ~ $result;
 }
-put $data-w.DateTime.local ~ ' is in the ' ~ $factors ~ ' days ago window, array-indexed at ' ~ $index;
 
 =finish
