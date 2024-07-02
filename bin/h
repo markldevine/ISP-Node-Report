@@ -46,7 +46,7 @@ loop (my $i = 0; $i < 24; $i++) {
                         :00minute,
                         :00second,
                         :timezone($tz-off),
-                    ) - (7 * (24 * 60 * 60));
+                    ) - (1 * (24 * 60 * 60));
     my $result  = (($first - $data) / (24 * 60 * 60));
     die 'Data DT is relatively in the future!' if $result <= 0;
     my $index   = $result.floor;
