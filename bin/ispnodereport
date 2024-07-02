@@ -414,6 +414,14 @@ put 'Summary...';
 #       $.daycount = 0   
 #       &.formatter = Nil
 
+    my $now                         = now.DateTime;
+    my $target                      = $now;
+    $target                         = DateTime.new(($now - (24 * 60 * 60))) if $now.hour < $window-hour;
+    my $year                        = $target.local.year;
+    my $month                       = $target.local.month;
+    my $day                         = $target.local.day;
+    my $end-window                  = DateTime.new( :$year, :$month, :$day, :hour($window-hour), :00minute, :00second, :timezone($tz-off));
+    my $begin-window                = $end-window - (24 * 60 * 60);
 #   my $anon-count              = 1;
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         my $node-name = $record<ENTITY>;
@@ -427,14 +435,18 @@ put 'Summary...';
         my $examined            = $record<EXAMINED>;
         my $start-time          = $record<START_TIME>;
         my $elapsed-seconds     = $end-time.posix - $start-time.posix;
-        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<AFFECTED>.unshift($affected);
-        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<BYTES>.unshift($bytes);
-        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<EXAMINED>.unshift($examined);
-        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<ELAPSED>.unshift($elapsed-seconds);
+        my $result              = (($end-window - $start-time) / (24 * 60 * 60));
+#       if $result <= 0 {
+#           note 'Data DT ' ~ $start-time.DateTime.local ~ " is in the backup window's future!";
+#           next;
+#       }
+        my $index               = $result.floor;
+        $index++                if $index < $result;
+        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<AFFECTED>[$index]    += $affected;
+        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<BYTES>[$index]       += $bytes;
+        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<EXAMINED>[$index]    += $examined;
+        %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<ELAPSED>[$index]     += $elapsed-seconds;
     }
-
-ddt %nodes;
-die;
 
 ##  my @fragments  = ();
 ##  @fragments.push: Our::Grid::Cell::Fragment.new(:text('AIXTEST' ~ ouc-superscript-lparen),   :bold);
@@ -500,25 +512,67 @@ put 'Grid...';
         my $total-elapsed       = 0;
         my $total-elapsed-count = 0;
         for %nodes{$node-name}<SUMMARY><SCHEDULE>.keys -> $schedule {
-            $files1            += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0];
-            $files7            += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0..6]      if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[6]:exists;
-            $files7-count      += 7;
-            $files30           += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0..29]     if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[29]:exists;
-            $files30-count     += 30;
-            $size1             += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[0];
-            $size7             += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[0..6]         if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[6]:exists;
-            $size7-count       += 7;
-            $size30            += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[0..29]        if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[29]:exists;
-            $size30-count      += 30;
-            $elapsed1          += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[0];
-            $elapsed7          += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[0..6]       if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[6]:exists;
-            $elapsed7-count    += 7;
-            $elapsed30         += [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[0..29]      if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[29]:exists;
-            $elapsed30-count   += 30;
-            $total-size        = [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[0..*];
-            $total-size-count += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>.elems;
-            $total-elapsed      = [+] %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[0..*];
-            $total-elapsed-count += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>.elems;
+            $files1            += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0]             if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0]:exists;
+            loop (my $i = 0; $i < 7; $i++) {
+                if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[$i]:exists {
+                    with %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[$i] {
+                        $files7 += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[$i];
+                        $files7-count++;
+                    }
+                }
+            }
+            loop ($i = 0; $i < 30; $i++) {
+                if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[$i]:exists {
+                    with %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[$i] {
+                        $files30 += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[$i];
+                        $files30-count++;
+                    }
+                }
+            }
+            $size1             += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[0]                if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[0]:exists;
+            loop ($i = 0; $i < 7; $i++) {
+                if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[$i]:exists {
+                    with %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[$i] {
+                        $size7 += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[$i];
+                        $size7-count++;
+                    }
+                }
+            }
+            loop ($i = 0; $i < 29; $i++) {
+                if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[$i]:exists {
+                    with %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[$i] {
+                        $size30 += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>[$i];
+                        $size30-count++;
+                    }
+                }
+            }
+            $elapsed1          += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[0]              if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[0]:exists;
+            loop ($i = 0; $i < 7; $i++) {
+                if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[$i]:exists {
+                    with %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[$i] {
+                        $elapsed7 += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[$i];
+                        $elapsed7-count++;
+                    }
+                }
+            }
+            loop ($i = 0; $i < 29; $i++) {
+                if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[$i]:exists {
+                    with %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[$i] {
+                        $elapsed30 += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>[$i];
+                        $elapsed30-count++;
+                    }
+                }
+            }
+            for %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<BYTES>.list -> $bytes {
+                next            without $bytes;
+                $total-size    += $bytes.Int;
+                $total-size-count++;
+            }
+            for %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<ELAPSED>.list -> $elapsed {
+                next            without $elapsed;
+                $total-elapsed += $elapsed.Int;
+                $total-elapsed-count++;
+            }
         }
         $files7                 = ($files7 / $files7-count).round                                           if $files7;
         $files30                = ($files30 / $files30-count).round                                         if $files30;

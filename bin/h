@@ -28,7 +28,7 @@ loop (my $i = 0; $i < 10; $i++) {
                      ) - ($i * (24 * 60 * 60))
                     );
     $begin      =   $end - (24 * 60 * 60);
-    $first      = $begin if $i == 0;
+    $first      = $end if $i == 0;
     put "[$i]\t" ~ $begin.DateTime.local ~ ' ... ' ~ $end.DateTime.local;
 }
 
@@ -50,7 +50,7 @@ loop (my $i = 0; $i < 24; $i++) {
         next;
     }
     my $index   = $result.floor;
-    $index++    if $index < $result;
+#   $index++    if $index < $result;
     put "[$index]\t" ~ $data.DateTime.local ~ "\t\t" ~ $result;
 }
 
