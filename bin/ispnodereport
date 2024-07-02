@@ -422,6 +422,7 @@ put 'Summary...';
     my $day                         = $target.local.day;
     my $end-window                  = DateTime.new( :$year, :$month, :$day, :hour($window-hour), :00minute, :00second, :timezone($tz-off));
     my $begin-window                = $end-window - (24 * 60 * 60);
+#put $end-window.local;
 #   my $anon-count              = 1;
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         my $node-name = $record<ENTITY>;
@@ -435,13 +436,17 @@ put 'Summary...';
         my $examined            = $record<EXAMINED>;
         my $start-time          = $record<START_TIME>;
         my $elapsed-seconds     = $end-time.posix - $start-time.posix;
+
+#   2024-07-01 20:21:59.000000      2024-07-01 21:08:11.000000      BACKUP  933132  JGDCIEVAULT01PV SSL     10.10.131.229:43676     SCH_2000
+
         my $result              = (($end-window - $start-time) / (24 * 60 * 60));
-#       if $result <= 0 {
-#           note 'Data DT ' ~ $start-time.DateTime.local ~ " is in the backup window's future!";
-#           next;
-#       }
+        if $result <= 0 {
+#           note 'Data DT ' ~ $start-time.DateTime.local ~ " is after backup window's cutoff";
+            next;
+        }
         my $index               = $result.floor;
-        $index++                if $index < $result;
+#       $index++                if $index < $result;
+#put "[$index]\t\t$start-time";
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<AFFECTED>[$index]    += $affected;
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<BYTES>[$index]       += $bytes;
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<EXAMINED>[$index]    += $examined;
@@ -477,40 +482,45 @@ put 'Summary...';
 put 'Grid...';
     for %nodes.keys.sort -> $node-name {
         my $domain-name         = %nodes{$node-name}<DOMAIN_NAME>;
-        my $files1;
-        my $files7;
-        my $files7-count;
-        my $files30;
-        my $files30-count;
-        my $size1;
-        my $size7;
-        my $size7-count;
-        my $size30;
-        my $size30-count;
-        my $elapsed1;
-        my $elapsed7;
-        my $elapsed7-count;
-        my $elapsed30;
-        my $elapsed30-count;
-        $files1                 = 0;
-        $files7                 = 0;
-        $files7-count           = 0;
-        $files30                = 0;
-        $files30-count          = 0;
-        $size1                  = 0;
-        $size7                  = 0;
-        $size7-count            = 0;
-        $size30                 = 0;
-        $size30-count           = 0;
-        $elapsed1               = 0;
-        $elapsed7               = 0;
-        $elapsed7-count         = 0;
-        $elapsed30              = 0;
-        $elapsed30-count        = 0;
-        my $total-size          = 0;
-        my $total-size-count    = 0;
-        my $total-elapsed       = 0;
-        my $total-elapsed-count = 0;
+#       my $files1;
+#       my $files7;
+#       my $files7-count;
+#       my $files30;
+#       my $files30-count;
+#       my $size1;
+#       my $size7;
+#       my $size7-count;
+#       my $size30;
+#       my $size30-count;
+#       my $elapsed1;
+#       my $elapsed7;
+#       my $elapsed7-count;
+#       my $elapsed30;
+#       my $elapsed30-count;
+        my $files1                  = 0;
+        my $files7                  = 0;
+        my $files7-count            = 0;
+        my $files30                 = 0;
+        my $files30-count           = 0;
+        my $size1                   = 0;
+        my $size7                   = 0;
+        my $size7-count             = 0;
+        my $size30                  = 0;
+        my $size30-count            = 0;
+        my $elapsed1                = 0;
+        my $elapsed7                = 0;
+        my $elapsed7-count          = 0;
+        my $elapsed30               = 0;
+        my $elapsed30-count         = 0;
+        my $total-size              = 0;
+        my $total-size-count        = 0;
+        my $total-elapsed           = 0;
+        my $total-elapsed-count     = 0;
+        my $total-affected          = 0;
+        my $total-affected-count    = 0;
+        my $total-examined          = 0;
+        my $total-examined-count    = 0;
+        my $file-change-rate        = 0;
         for %nodes{$node-name}<SUMMARY><SCHEDULE>.keys -> $schedule {
             $files1            += %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0]             if %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>[0]:exists;
             loop (my $i = 0; $i < 7; $i++) {
@@ -573,6 +583,16 @@ put 'Grid...';
                 $total-elapsed += $elapsed.Int;
                 $total-elapsed-count++;
             }
+            for %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<AFFECTED>.list -> $affected {
+                next            without $affected;
+                $total-affected += $affected.Int;
+                $total-affected-count++;
+            }
+            for %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule}<EXAMINED>.list -> $examined {
+                next            without $examined;
+                $total-examined += $examined.Int;
+                $total-examined-count++;
+            }
         }
         $files7                 = ($files7 / $files7-count).round                                           if $files7;
         $files30                = ($files30 / $files30-count).round                                         if $files30;
@@ -582,7 +602,7 @@ put 'Grid...';
         $elapsed30              = ($elapsed30 / $elapsed30-count).round                                     if $elapsed30;
         $total-size             = ($total-size / $total-size-count).round                                   if $total-size;
         $total-elapsed          = ($total-elapsed / $total-elapsed-count).round                             if $total-elapsed;
-
+        $file-change-rate       = (($total-affected / $total-examined) * 100).round                         if $total-affected;
         my %retentions;
         my %filespaces;
         my $total-number-of-objects;
@@ -620,7 +640,7 @@ put 'Grid...';
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100),   :seconds-to-y-d-hh-mm-ss)),     :8col);
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed30),                                                                                             :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100),   :seconds-to-y-d-hh-mm-ss)),     :9col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text('101%'),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :10col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($file-change-rate.Str ~ '%'),                                                                            :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :10col);
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-size),                                                                                            :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82),    :bytes-to-bytes-unit)),         :11col);
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-elapsed),                                                                                         :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82),    :seconds-to-y-d-hh-mm-ss)),     :12col);
 
@@ -665,10 +685,10 @@ put 'Grid...';
             $grid.current-row++;
         }
     }
-    $grid.ANSI-print;
+#   $grid.ANSI-print;
 #   $grid.TEXT-print;
 #   $grid.TUI;
-#   $grid.CSV-print;
+    $grid.HTML-print;
 }
 
 =finish
