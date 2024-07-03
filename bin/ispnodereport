@@ -445,7 +445,7 @@ put 'Summary...';
             next;
         }
         my $index               = $result.floor;
-#       $index++                if $index < $result;
+        $index--                if $index == $result;
 #put "[$index]\t\t$start-time";
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<AFFECTED>[$index]    += $affected;
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<BYTES>[$index]       += $bytes;
@@ -685,10 +685,11 @@ put 'Grid...';
             $grid.current-row++;
         }
     }
-#   $grid.ANSI-print;
+    $grid.ANSI-print;
 #   $grid.TEXT-print;
 #   $grid.TUI;
-    $grid.HTML-print;
+#   $grid.CSV-print;
+#   $grid.HTML-print;
 }
 
 =finish

@@ -4,20 +4,25 @@ my $tz-off      = now.DateTime.local.timezone;
 
 my $window-hour = 15;
 
-my $now         = DateTime.new(:2024year, :07month :02day, :16hour, :00minute, :00second, :timezone($tz-off));
-my $target      = $now;
-$target         = DateTime.new(($now - (24 * 60 * 60))) if $now.hour < $window-hour;
+#   - case before $window-hour (:14hour)
+#   - case exactly $window-hour (:15hour)
+#   - case after $window-hour (:16hour)
 
-my $year        = $target.local.year;
-my $month       = $target.local.month;
-my $day         = $target.local.day;
+my $now         = DateTime.new(:2024year, :07month :02day, :14hour, :00minute, :00second, :timezone($tz-off));
+put 'Initial date/time: ' ~ $now.local;
 
-put 'Current date/time: ' ~ $now.local;
+my $start       = $now;
+$start          = DateTime.new(($now - (24 * 60 * 60))) if $now.hour < $window-hour;
+put '  Start date/time: ' ~ $start.local;
 
-my $begin;
-my $first;
-loop (my $i = 0; $i < 10; $i++) {
-    my $end     =   (DateTime.new(
+my $year        = $start.local.year;
+my $month       = $start.local.month;
+my $day         = $start.local.day;
+
+my ($begin, $end, $first, $i, $j);
+
+loop ($i = 0; $i < 10; $i++) {
+    $end        =   (DateTime.new(
                         :$year,
                         :$month,
                         :$day,
@@ -32,26 +37,40 @@ loop (my $i = 0; $i < 10; $i++) {
     put "[$i]\t" ~ $begin.DateTime.local ~ ' ... ' ~ $end.DateTime.local;
 }
 
-put "\t" ~ $first.DateTime.local;
 
-loop (my $i = 0; $i < 24; $i++) {
-    my $data    =   DateTime.new(
+loop ($i = 0; $i < 24; $i++) {
+    $end        =   (DateTime.new(
                         :$year,
                         :$month,
                         :$day,
-                        :hour($i),
+                        :hour($window-hour),
                         :00minute,
                         :00second,
                         :timezone($tz-off),
-                    ) - (2 * (24 * 60 * 60));
-    my $result  = (($first - $data) / (24 * 60 * 60));
-    if $result <= 0 {
-        note 'Data DT ' ~ $data.DateTime.local ~ " is in the backup window's future!";
-        next;
+                     ) - ($i * (24 * 60 * 60))
+                    );
+    $begin      =   $end - (24 * 60 * 60);
+    put "\t" ~ $begin.DateTime.local;
+
+    loop ($j = 0; $j < 24; $j++) {
+        my $data    =   DateTime.new(
+                            :$year,
+                            :$month,
+                            :$day,
+                            :hour($j),
+                            :00minute,
+                            :00second,
+                            :timezone($tz-off),
+                        ) - ($i * (24 * 60 * 60));
+        my $result  = (($first - $data) / (24 * 60 * 60));
+        if $result <= 0 {
+            note 'Data DT ' ~ $data.DateTime.local ~ " is in the backup window's future!";
+            next;
+        }
+        my $index   = $result.floor;
+        $index--    if $index == $result;
+        put "[$index]\t" ~ $data.DateTime.local ~ "\t\t" ~ $result;
     }
-    my $index   = $result.floor;
-#   $index++    if $index < $result;
-    put "[$index]\t" ~ $data.DateTime.local ~ "\t\t" ~ $result;
 }
 
 =finish
