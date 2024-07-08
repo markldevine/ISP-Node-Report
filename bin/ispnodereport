@@ -602,23 +602,23 @@ note 'Grid...';
 #       :highlight(21, 41, 34),     :background(21, 41, 34) # almost black-green
 #       :highlight(4, 102, 69),     :background(4, 102, 69) # medium green
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<black>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :0col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($node-name),                                                                                             :justification<left>,   :foreground<white>, :highlight(15, 79, 52),     :background(15, 79, 52))),                                  :0col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100),   :add-commas-to-digits)),        :1col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100),   :add-commas-to-digits)),        :2col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files30),                                                                                               :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100),   :add-commas-to-digits)),        :3col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files1),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100),   :add-commas-to-digits)),        :1col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files7),                                                                                                :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100),   :add-commas-to-digits)),        :2col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($files30),                                                                                               :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100),   :add-commas-to-digits)),        :3col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<black>, :highlight(6, 122, 82),     :background(6, 122, 82),    :bytes-to-bytes-unit)),         :4col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<black>, :highlight(6, 122, 82),     :background(6, 122, 82),    :bytes-to-bytes-unit)),         :5col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size30),                                                                                                :justification<right>,  :foreground<black>, :highlight(6, 122, 82),     :background(6, 122, 82),    :bytes-to-bytes-unit)),         :6col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size1),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82),    :bytes-to-bytes-unit)),         :4col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size7),                                                                                                 :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82),    :bytes-to-bytes-unit)),         :5col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($size30),                                                                                                :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82),    :bytes-to-bytes-unit)),         :6col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100),   :seconds-to-y-d-hh-mm-ss)),     :7col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100),   :seconds-to-y-d-hh-mm-ss)),     :8col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed30),                                                                                             :justification<right>,  :foreground<black>, :highlight(0, 160, 100),    :background(0, 160, 100),   :seconds-to-y-d-hh-mm-ss)),     :9col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed1),                                                                                              :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100),   :seconds-to-y-d-hh-mm-ss)),     :7col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed7),                                                                                              :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100),   :seconds-to-y-d-hh-mm-ss)),     :8col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($elapsed30),                                                                                             :justification<right>,  :foreground<white>, :highlight(0, 160, 100),    :background(0, 160, 100),   :seconds-to-y-d-hh-mm-ss)),     :9col);
 
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($file-change-rate.Str ~ '%'),                                                                            :justification<right>,  :foreground<black>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :10col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-size),                                                                                            :justification<right>,  :foreground<black>, :highlight(6, 122, 82),     :background(6, 122, 82),    :bytes-to-bytes-unit)),         :11col);
-        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-elapsed),                                                                                         :justification<right>,  :foreground<black>, :highlight(6, 122, 82),     :background(6, 122, 82),    :seconds-to-y-d-hh-mm-ss)),     :12col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($file-change-rate.Str ~ '%'),                                                                            :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82))),                                  :10col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-size),                                                                                            :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82),    :bytes-to-bytes-unit)),         :11col);
+        $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-elapsed),                                                                                         :justification<right>,  :foreground<white>, :highlight(6, 122, 82),     :background(6, 122, 82),    :seconds-to-y-d-hh-mm-ss)),     :12col);
 
         unless %nodes{$node-name}<POLICY><FILESPACE_NAME>.elems {
             $grid.current-row++;
@@ -644,7 +644,12 @@ note 'Grid...';
             $grid.add-cell(:cell(Our::Grid::Cell.new(:text('*'),                                                                                                :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169))),                             :14col);
         }
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-number-of-objects),                                                                               :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :number-to-metric-unit)),     :15col);
+
+
+
         $grid.add-cell(:cell(Our::Grid::Cell.new(:text($total-number-of-bytes),                                                                                 :justification<right>,  :foreground<black>, :highlight(135, 233, 169),    :background(135, 233, 169), :bytes-to-bytes-unit)),       :16col);
+
+
         $grid.current-row++;
 
         next unless $detail && %filespaces.elems > 1;
