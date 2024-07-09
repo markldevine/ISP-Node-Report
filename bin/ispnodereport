@@ -9,7 +9,7 @@ use ISP::dsmadmc;
 use Our::Grid;
 use Our::Utilities;
 
-#use Data::Dump::Tree;
+use Data::Dump::Tree;
 #use Grammar::Debugger;
 
 my Our::Grid    $grid;
@@ -420,9 +420,10 @@ note 'Summary...';
     my $year                        = $target.local.year;
     my $month                       = $target.local.month;
     my $day                         = $target.local.day;
-    my $end-window                  = DateTime.new( :$year, :$month, :$day, :hour($window-hour), :00minute, :00second, :timezone($tz-off));
+    my $end-window                  = DateTime.new(:$year, :$month, :$day, :hour($window-hour), :00minute, :00second, :timezone($tz-off));
     my $begin-window                = $end-window - (24 * 60 * 60);
 #   my $anon-count              = 1;
+#   my @grand-total-bytes;
     for $dsmadmc.execute(@sql, :expire-after(DateTime.new(now + (24 * 60 * 60)))) -> $record {
         my $node-name = $record<ENTITY>;
         my $schedule-name       = $record<SCHEDULE_NAME>;
@@ -438,11 +439,19 @@ note 'Summary...';
         next                    if $result <= 0;                                                                                    # note 'Data DT ' ~ $start-time.DateTime.local ~ " is after backup window's cutoff";
         my $index               = $result.floor;
         $index--                if $index == $result;
+#       @grand-total-bytes[$index]                                                 += $bytes;
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<AFFECTED>[$index]    += $affected;
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<BYTES>[$index]       += $bytes;
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<EXAMINED>[$index]    += $examined;
         %nodes{$node-name}<SUMMARY><SCHEDULE>{$schedule-name}<ELAPSED>[$index]     += $elapsed-seconds;
     }
+
+#my $window = $end-window;
+#for @grand-total-bytes -> $bytes {
+#    put $window.year ~ '-' ~ $window.month.fmt("%02d") ~ '-' ~ $window.day.fmt("%02d") ~ "\t" ~ $bytes;
+#    $window = DateTime.new($window - (24 * 60 * 60), :timezone($tz-off));
+#}
+#die;
 
 ##  my @fragments  = ();
 ##  @fragments.push: Our::Grid::Cell::Fragment.new(:text('AIXTEST' ~ ouc-superscript-lparen),   :bold);
@@ -666,10 +675,10 @@ note 'Grid...';
             $grid.current-row++;
         }
     }
-    $grid.ANSI-print;
+#   $grid.ANSI-print;
 #   $grid.TEXT-print;
 #   $grid.TUI;
-#   $grid.CSV-print;
+    $grid.CSV-print(:raw);
 #   $grid.HTML-print;
 }
 
